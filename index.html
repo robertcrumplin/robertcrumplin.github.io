@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robert Crumplin</title>
+<style>
+  :root {
+    --paper: #fbfaf6;
+    --ink: #1c1c1e;
+    --muted: #7a787d;
+    --rule: #dcd8cf;
+    --c1: #c2552d;   /* D₁: its vanishing cycles, nodes, and edges of Γ over it */
+    --c2: #1d7c74;   /* D₂ */
+    --accent: #b23a1d;
+    --serif: "STIX Two Text", "Latin Modern Roman", "Cambria", "Georgia", "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #151517; --ink: #ebe9e4; --muted: #9a989d; --rule: #34333a;
+      --c1: #ec8a62; --c2: #56b8ad; --accent: #f09a75;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--serif); }
+  body { min-height: 100dvh; display: flex; flex-direction: column; }
+  a { color: inherit; }
+
+  header { padding: 2.5rem 1.5rem 0; text-align: center; }
+  h1 { font-weight: 400; font-size: clamp(1.7rem, 3vw, 2.3rem); letter-spacing: .02em; margin: 0; }
+  .tagline { color: var(--muted); margin: .35rem 0 0; font-style: italic; }
+  .tagline span { display: inline-block; }
+  .market { margin: .7rem 0 0; font-size: 1.02rem; }
+  .market a { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+  .market a:hover { border-bottom-style: dotted; }
+
+  .about {
+    display: flex; align-items: center; gap: 1.75rem; max-width: 40rem; margin: 2.5rem auto 0; padding: 2rem 1.5rem 0;
+    border-top: 1px solid var(--rule); width: calc(100% - 3rem);
+  }
+  .portrait {
+    flex: none; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+    padding: 4px; border: 1px solid var(--rule); background: var(--paper);
+    filter: saturate(.82) contrast(.97);
+  }
+  .bio p { margin: 0 0 .6rem; line-height: 1.6; font-size: 1.05rem; }
+  .bio .market-note { color: var(--accent); font-style: italic; margin: 0; }
+  @media (max-width: 560px) {
+    .about { flex-direction: column; text-align: center; gap: 1rem; }
+  }
+
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 1.75rem 1rem 0; }
+  figure { margin: 0; width: min(1000px, 100%); }
+  figcaption {
+    max-width: 46rem; margin: .5rem auto 0; padding: 0 1rem;
+    color: var(--muted); font-size: .98rem; line-height: 1.5; text-align: center; min-height: 4.5em;
+  }
+  figcaption .hint { display: none; color: var(--ink); font-size: 1.15rem; }
+  figcaption.hinting .hint { display: block; }
+  figcaption.hinting .default { display: none; }
+  #replay { font: inherit; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; }
+
+  .textnav { text-align: center; padding: 1.25rem 1rem 0; font-size: .95rem; color: var(--muted); }
+  .textnav a { text-decoration: none; margin: 0 .45rem; white-space: nowrap; }
+  .textnav a:hover { color: var(--ink); text-decoration: underline; }
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 1.5rem 1rem 2rem; }
+  footer a { color: inherit; text-underline-offset: 2px; }
+  footer a:hover { color: var(--ink); }
+
+  /* ---------- the figure ---------- */
+  .fig { display: block; width: 100%; height: auto; overflow: visible; }
+  .sheet  { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+  .shade  { fill: var(--ink); stroke: none; }
+  .crease { fill: none; stroke-width: 2.2; stroke-linecap: round; }
+  .cfill  { fill: var(--paper); fill-opacity: .92; fill-rule: evenodd; stroke: none; }
+  .ink    { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .thin   { stroke-width: 1.6; }
+  .cyc    { fill: none; stroke-width: 1.8; stroke-linecap: round; }
+  .cyc.back { stroke-dasharray: 2.5 4; opacity: .75; }
+  .d1.cyc, .d1.edge, .d1.crease { stroke: var(--c1); }  .d1.node { fill: var(--c1); }  .lab.d1 { fill: var(--c1); }
+  .d2.cyc, .d2.edge, .d2.crease { stroke: var(--c2); }  .d2.node { fill: var(--c2); }  .lab.d2 { fill: var(--c2); }
+  .edge   { fill: none; stroke-width: 2.6; stroke-linecap: round; }
+  .pt, .vtx { fill: var(--ink); }
+  .tvtx   { fill: var(--paper); stroke: var(--ink); stroke-width: 1.6; }
+  .leader { stroke: var(--muted); stroke-width: 1; }
+  .proj   { stroke: var(--muted); stroke-width: 1.1; stroke-dasharray: 1.5 4; stroke-linecap: round; }
+  .leg    { stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; fill: none; }
+  .legtail { stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 0 6; fill: none; }
+  .arrow  { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .lab    { font-family: var(--serif); font-size: 22px; fill: var(--ink); }
+  .lab .i { font-style: italic; }
+  .lab .sub { font-size: .68em; }
+  .lab.name { fill: var(--muted); font-size: 20px; }
+  .lab.comp { fill: var(--muted); font-size: 18px; }
+
+  .fig-link { cursor: pointer; outline: none; }
+  .fig-link .hit { fill: transparent; stroke: none; pointer-events: all; }
+  .fig-link:hover .lab:not(.d1):not(.d2),
+  .fig-link:focus-visible .lab:not(.d1):not(.d2) { fill: var(--accent); }
+  .fig-link:focus-visible .hit { stroke: var(--rule); stroke-width: 1.5; stroke-dasharray: 3 3; }
+
+  /* hover: dim everything except the pieces that correspond to the hovered label */
+  .dim { transition: opacity .25s ease; }
+  .focusing .dim:not(.lit) { opacity: .18; }
+  .lit.edge { stroke-width: 3.6; }
+  .lit.cyc, .lit.crease { stroke-width: 2.8; }
+
+  /* ---------- intro animation (only while <svg> has class "intro") ---------- */
+  .intro .draw { stroke-dasharray: 1 1; stroke-dashoffset: 1;
+                 animation: draw var(--dur, 1s) cubic-bezier(.55,.05,.3,1) var(--d, 0s) forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .intro .fade { opacity: 0; animation: fade .7s ease var(--d, 0s) forwards; }
+  @keyframes fade { to { opacity: 1; } }
+  .intro .pop  { transform: scale(0); transform-box: fill-box; transform-origin: center;
+                 animation: pop .45s cubic-bezier(.3,1.6,.5,1) var(--d, 0s) forwards; }
+  @keyframes pop { to { transform: scale(1); } }
+
+  /* ---------- page panel (opens with a growing circle) ---------- */
+  dialog#panel {
+    position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+    margin: 0; padding: 0; border: 0; background: var(--paper); color: var(--ink); overflow: auto;
+  }
+  dialog#panel::backdrop { background: transparent; }
+  #panel-content { max-width: 40rem; margin: 0 auto; padding: 4.5rem 1.5rem 3rem; line-height: 1.6; font-size: 1.08rem; }
+  #panel-content h2 { font-weight: 400; font-size: 1.9rem; margin: 0 0 1rem; }
+  #panel-content .note { color: var(--muted); font-size: .92rem; font-style: italic; }
+  #panel-content a { color: inherit; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  #panel-content a:hover { color: var(--accent); text-decoration-color: currentColor; }
+  #panel-content h3 { font-weight: 400; font-size: 1.25rem; margin: 2rem 0 .6rem; color: var(--muted); }
+  #panel-content .meta { color: var(--muted); font-size: .95rem; }
+  #panel-content .callout { color: var(--accent); }
+  #panel-content ul.pubs, #panel-content ul.talks, #panel-content ul.plain { list-style: none; padding: 0; margin: 0; }
+  #panel-content .pubs li { margin: 0 0 1.1rem; }
+  #panel-content .pubs .title { display: block; font-size: 1.1rem; }
+  #panel-content .pubs .meta, #panel-content .pubs .abs { display: block; }
+  #panel-content .pubs .abs { font-size: .98rem; margin-top: .15rem; }
+  #panel-content .plain li { margin: 0 0 .45rem; }
+  #panel-content .when { color: var(--muted); font-size: .92rem; white-space: nowrap; }
+  #panel-content .plain .when { margin-left: .4rem; }
+  #panel-content .talks li { display: grid; grid-template-columns: 5.6rem 1fr; column-gap: .6rem; margin: 0 0 .55rem; }
+  #panel-content .talks .when { grid-row: span 3; padding-top: .1rem; }
+  #panel-content .talks .t { display: block; font-style: italic; }
+  #panel-content .talks .extras, #panel-content .lectures .extras { display: block; font-size: .92rem; color: var(--muted); }
+  #panel-content .lectures { padding-left: 1.6rem; }
+  #panel-content .lectures li { margin: 0 0 .6rem; padding-left: .2rem; }
+  #panel-content .lectures li::marker { color: var(--muted); }
+  .panel-close {
+    position: fixed; top: .8rem; right: 1.1rem; font: 2rem/1 var(--serif);
+    color: var(--muted); background: none; border: 0; cursor: pointer; padding: .3rem .5rem;
+  }
+  .panel-close:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Robert Crumplin</h1>
+  <p class="tagline"><span>postdoc in algebraic geometry;</span> <span>enumerative geometry, tropical geometry, mirror symmetry</span></p>
+  <p class="market"><a href="#contact" data-panel="contact">I’m on the job market!</a></p>
+</header>
+
+<main>
+  <figure>
+    <svg id="fig" class="fig" role="group"
+         aria-label="A surface degenerating into three components, carrying a genus-two curve that breaks into three pieces, and the tropicalisation of the picture. The labels are links."></svg>
+    <figcaption id="caption">
+      <span class="default">
+        A surface <i>X<sub>t</sub></i> degenerates, as <i>t</i>&nbsp;→&nbsp;0, to
+        <i>X</i><sub>0</sub>&nbsp;=&nbsp;<i>Y</i><sub>1</sub>&nbsp;∪&nbsp;<i>Y</i><sub>2</sub>&nbsp;∪&nbsp;<i>Y</i><sub>3</sub>,
+        glued along <i>D</i><sub>1</sub> and <i>D</i><sub>2</sub>. The genus-two curve <i>C<sub>t</sub></i>&nbsp;⊂&nbsp;<i>X<sub>t</sub></i>
+        breaks with it into three rational pieces, one in each <i>Y<sub>i</sub></i>, meeting in pairs of nodes on the <i>D<sub>j</sub></i>.
+        Tropicalising gives a genus-two tropical curve Γ mapping to trop&nbsp;<i>X</i>. Each label opens a page.
+        <button id="replay" type="button">replay</button>
+      </span>
+      <span class="hint" id="hint" aria-hidden="true"></span>
+    </figcaption>
+  </figure>
+</main>
+
+<section class="about" id="about-me" aria-label="About me">
+  <img class="portrait" alt="Robert Crumplin" width="150" height="150" src="data:image/jpeg;base64,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">
+  <div class="bio">
+    <p>I’m a postdoc with Georg Oberdieck at Heidelberg University. Before that I did my PhD at the
+       London School of Geometry and Number Theory (2020–2024), supervised by Alessio Corti and Navid Nabijou.
+       I work on enumerative geometry, log and tropical geometry, moduli spaces and mirror symmetry.</p>
+    <p class="market-note">Feel free to <a href="#contact" data-panel="contact">get in touch</a>
+       about positions, collaboration, or just to talk maths.</p>
+  </div>
+</section>
+
+<nav class="textnav" id="textnav" aria-label="Pages"></nav>
+<footer>© 2026 Robert Crumplin · Website animation inspired by <a href="https://plei99.github.io/">Patrick Lei</a></footer>
+
+<dialog id="panel" aria-label="Page">
+  <button class="panel-close" type="button" aria-label="Close">×</button>
+  <div id="panel-content"></div>
+</dialog>
+
+<!-- Page contents: each <template id="page-…"> is one page, shown in the panel when its label is clicked. -->
+<template id="page-about">
+  <h2>About</h2>
+  <p>I’m a postdoc with <a href="https://people.kth.se/~georgo/">Georg Oberdieck</a> at
+     <a href="https://sites.google.com/view/heidelbergag/startseite">Heidelberg University</a>.
+     Before that I did my PhD at the <a href="https://www.lsgnt-cdt.ac.uk/">London School of Geometry and Number Theory</a>
+     (2020–2024), supervised by <a href="http://geometry.ma.ic.ac.uk/acorti/">Alessio Corti</a> and
+     <a href="https://sites.google.com/view/navidnabijou/home">Navid Nabijou</a>.</p>
+  <p>My interests are enumerative geometry, log and tropical geometry, moduli spaces and mirror symmetry.
+     Feel free to <a href="#contact">email me</a> to talk about maths.</p>
+  <p class="callout">I’m on the job market! My CV is
+     <a href="https://drive.google.com/file/d/1ywfNIXCKpKDPTYgbuejPuDhFOl5oMFEE/view?usp=sharing">here</a>.</p>
+</template>
+
+<template id="page-research">
+  <h2>Research</h2>
+  <h3>Preprints</h3>
+  <ul class="pubs">
+    <li><span class="title">A universal decomposition of orbifold Gromov–Witten invariants of root stacks</span>
+        <span class="meta">with <a href="https://sites.google.com/view/samjohnston/home">Sam Johnston</a> · in preparation</span>
+        <span class="abs">We decompose the virtual class of orbifold maps to root stacks by mod <i>r</i> tropical type, disproving Conjecture W of BNR but proving it with λ<sub><i>g</i></sub> insertions.</span></li>
+    <li><span class="title">Intrinsic Mirror Symmetry with Quasimaps</span>
+        <span class="meta">with <a href="https://sites.google.com/view/qaasimshafi/">Qaasim Shafi</a> · in preparation</span>
+        <span class="abs">We prove birational invariance for log ε-quasimaps and use it to compare the Gross–Siebert and Tseng–You mirror algebras.</span></li>
+    <li><a class="title" href="https://arxiv.org/abs/2501.15171">Moduli spaces of twisted maps to smooth pairs</a>
+        <span class="meta">submitted, Jan. 2025 · <a href="https://arxiv.org/abs/2501.15171">arXiv:2501.15171</a></span>
+        <span class="abs">We classify the components of moduli of twisted maps to smooth pairs tropically, explaining known orbifold/log Gromov–Witten comparisons geometrically.</span></li>
+    <li><a class="title" href="https://arxiv.org/abs/1912.02717">Investigating transversals as generating sets for finite groups</a>
+        <span class="meta">with M. Chiodo, O. Donlan and P. Piwek · 2019 · <a href="https://arxiv.org/abs/1912.02717">arXiv:1912.02717</a></span></li>
+  </ul>
+  <h3>Current projects</h3>
+  <ul class="pubs">
+    <li><span class="title">TroPrym and stacky covers of graphs</span>
+        <span class="meta">with T. Poiret</span>
+        <span class="abs">We construct a notion of stacky double covers of graphs and their associated tropical Prym varieties.</span></li>
+    <li><span class="title">Canonical compactifications of cluster varieties</span>
+        <span class="meta">with Leo Herr, Soham Karwa and Peter Zaika</span>
+        <span class="abs">Log geometry gives canonical minimal compactifications of cluster varieties, whose tropicalisations are integral affine manifolds with singularities.</span></li>
+  </ul>
+  <h3>Other</h3>
+  <ul class="pubs">
+    <li><a class="title" href="https://drive.google.com/file/d/1RNueEbUiGgh50f_3DfI_ZpRMz_wfZcq5/view?usp=sharing">Moduli spaces of twisted maps to smooth pairs</a>
+        <span class="meta">PhD thesis, October 2024</span></li>
+    <li><a class="title" href="https://drive.google.com/file/d/1FlNCUKQ05rU20Kyl3eMABfR1BHGaPnpF/view?usp=sharing">The tropical geometry of orbifolds</a>
+        <span class="meta">unpublished notes, Oct. 2023 (last updated 11 Dec. 2023)</span>
+        <span class="abs">Introducing and studying the tropicalisation of orbifolds and logarithmic orbifolds.</span></li>
+  </ul>
+</template>
+
+<template id="page-teaching">
+  <h2>Teaching</h2>
+  <h3>Courses at Heidelberg</h3>
+  <ul class="plain">
+    <li><a href="#tropical">Tropical geometry</a>, with <a href="https://sites.google.com/view/qaasimshafi/">Qaasim Shafi</a> <span class="when">Winter 2026/27</span></li>
+    <li><a href="#toric">Toric geometry</a> <span class="when">Summer 2026</span></li>
+    <li>Moduli of curves, with Qaasim Shafi <span class="when">Autumn/Winter 2025</span></li>
+    <li>Fourier–Mukai transforms in algebraic geometry, with
+        <a href="https://sites.google.com/view/morten-lueders/">Morten Lüders</a> <span class="when">Spring/Summer 2025</span></li>
+  </ul>
+  <h3>Teaching assistant at Heidelberg</h3>
+  <ul class="plain">
+    <li>Algebraic Geometry 1 (lectured by Georg Oberdieck)</li>
+    <li>Algebraic Geometry 2 (lectured by Morten Lüders)</li>
+    <li>Intersection Theory (lectured by Georg Oberdieck)</li>
+  </ul>
+  <h3>Supervisions at Cambridge</h3>
+  <ul class="plain">
+    <li>Part II Galois Theory</li>
+    <li>Part IB Geometry and Topology</li>
+    <li>Part IA Group Theory</li>
+  </ul>
+  <p>I have also taken examples classes for other courses.</p>
+</template>
+
+<template id="page-tropical">
+  <h2>Tropical geometry</h2>
+  <p class="meta">Lecture course, Winter semester 2026/27, Heidelberg · with <a href="https://sites.google.com/view/qaasimshafi/">Qaasim Shafi</a></p>
+  <p><a href="https://docs.google.com/forms/d/e/1FAIpQLScNb4nOX7ClNHPtqGNDAOUVic2GZ_RDk4eGxjd-oCFXDDJqEg/viewform?usp=publish-editor">Sign up to the mailing list</a>.
+     Main reference: Maclagan–Sturmfels, <a href="https://janos.cs.technion.ac.il/COURSES/238900-13/Tropical/MaclaganSturmfels.pdf"><i>Introduction to Tropical Geometry</i></a>.</p>
+  <h3>Lectures and exercises</h3>
+  <ol class="lectures">
+    <li><a href="https://drive.google.com/file/d/1Hebzby_qBmqzOvDk9tgFz1kOfBn7u-4f/view?usp=sharing">Introduction, amoebas and the tropical semiring</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1FMdQz_5dRkU2z4WiMoZRnYiBEsyDWBvY/view?usp=sharing">Exercises 1</a> ·
+        <a href="https://drive.google.com/file/d/1Nzf_2Ol8ynYfh8QbH93kREoiQLiSZQ3d/view?usp=sharing">notes from the exercise class</a> (mostly Q2)</span></li>
+    <li><a href="https://drive.google.com/file/d/1eN8PMpojdqE4yelhLSLzrJ-RTKvOnlWH/view?usp=sharing">Tropical hypersurfaces, tropical curves and balancing</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/19TDHnji58nmC_pVAZQKEVBg3pa5VFFSb/view?usp=sharing">Exercises 2</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1EXPCE924vGyY0GS41-2EsIAlFM7HHVEY/view?usp=sharing">Valuations and Kapranov’s theorem</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1myRWXb9dPrBMFT5JT27Yjmv8oYae0bWM/view?usp=sharing">video</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1IlzctAMQN99ZPnuxfAKM0it6xeqv3CPq/view?usp=sharing">Proof of Kapranov’s theorem; background on algebraic curves</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/147F4YD-JLqIgKXsBjUBqWmhcJ-9Hl5n5/view?usp=sharing">Exercises 3</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1A8WdTNKrrD7WWG9tLMaflsa1bz8b1D9s/view?usp=sharing">Tropical Bézout’s theorem</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1yNHMFLD4SIYwmvs5MHd0NLXs2v5t3eWI/view?usp=sharing">Exercises 4</a></span></li>
+  </ol>
+</template>
+
+<template id="page-toric">
+  <h2>Toric geometry</h2>
+  <p class="meta">Lecture course, Summer semester 2026, Heidelberg</p>
+  <h3>Lectures and question sheets</h3>
+  <ol class="lectures">
+    <li><a href="https://drive.google.com/file/d/12k474CGRFH7sv1FhtIjziThB9E0mQbL4/view?usp=sharing">Introduction and definitions</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/10RnASCPNixeIZ0Cq2FZO0tzILJtRb0lK/view?usp=sharing">Question sheet 1</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1yV-t5MQYFf7uqy-jRF_J8hmhmvXbzIvL/view?usp=sharing">The fan construction</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1hiF7_Tw7qtbrsosyk19ZWMo0kF-wgd9o/view?usp=sharing">Question sheet 2</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1Awh-DYgmXargY4DTmxKusQTt8TEdcXAp/view?usp=sharing">Properties of toric varieties and the polytope construction</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1ynDOUh7FvUYp8duh4UDtHsolcZFCG20s/view?usp=sharing">Question sheet 3</a></span></li>
+    <li><a href="https://drive.google.com/file/d/12BIGmsiy4IFJP0BZiKswAIxywhf2Gueg/view?usp=sharing">Toric morphisms</a>
+        <span class="extras">(given by <a href="https://sites.google.com/view/qaasimshafi/">Qaasim Shafi</a>)</span></li>
+    <li><a href="https://drive.google.com/file/d/17jKykVML_ZCdSAxv6o4Tqw0vpqtJme2c/view?usp=sharing">Resolution of singularities and the orbit–cone correspondence</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1ScqGjdWF5ZT3zWnUm4mEkp1BjQsOPZyq/view?usp=sharing">Question sheet 4</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1WXSua31AAUlogM8LcoJ8Du0Ojwq4_oVA/view?usp=sharing">Weil divisors and the class group</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1Q7D1n2MUaTm7ZidsR-vyg2YpfRDVqz5e/view?usp=sharing">Question sheet 5</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1FEj8_TPa2Dsz7pLuTGMwGsAxLMAFpEx8/view?usp=sharing">Cartier divisors and PL functions</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1-rWsTQem752Hq7Y4ijseXqpvQUQydgCl/view?usp=sharing">Question sheet 6</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1FbwnZLRZddjjrxplz-Uv2Hu8JMDWt_H2/view?usp=sharing">Line bundles on toric varieties</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1s88RKW06-Ptx90ic3jnLhxEhZW2TCL_4/view?usp=sharing">Question sheet 7</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1Gn5kMKrgZp1WDoaj6q9GmmNmjOFTi7lw/view?usp=sharing">Non-projective proper toric varieties; logarithmic geometry, motivation and definitions</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1RI6O6v_0sjCXGTMTHwJ0Xz_dkhjvHkfg/view?usp=sharing">Question sheet 8</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1r-hwCE2T7n8od6ISDoGROHYEQw1AWArs/view?usp=sharing">Properties of log schemes and log morphisms</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1Aa9aq8XacB110CV5c-fGZOJSjfmZH--U/view?usp=sharing">Question sheet 9</a></span></li>
+    <li><a href="https://drive.google.com/file/d/1bqyjYCufh8Eo4enA7RoAtcp7Jqn_rvSb/view?usp=sharing">Tropicalisation</a>
+        <span class="extras"><a href="https://drive.google.com/file/d/1DFC_zkkfLbOa0DsudixcE-XLgdTmntW7/view?usp=sharing">Question sheet 10</a></span></li>
+    <li>Artin fans</li>
+    <li>The Cox ring and quotients <span class="extras">(bonus lecture by Qaasim Shafi)</span></li>
+    <li>The topology of toric varieties <span class="extras">(bonus lecture by Qaasim Shafi)</span></li>
+  </ol>
+</template>
+
+<template id="page-talks">
+  <h2>Talks, seminars &amp; reading groups</h2>
+  <h3>Upcoming</h3>
+  <ul class="talks">
+    <li><span class="when">Jan 2027</span> Queen Mary University of London Algebraic Geometry Seminar <span class="t">A universal decomposition of orbifold Gromov–Witten invariants of root stacks</span></li>
+  </ul>
+  <h3>Selected invited talks</h3>
+  <ul class="talks">
+    <li><span class="when">Nov 2026</span> Virginia Tech Algebraic Geometry Seminar <span class="t">A universal decomposition of orbifold Gromov–Witten invariants of root stacks</span></li>
+    <li><span class="when">Apr 2026</span> Paderborn Oberseminar “Kombinatorische Algebraische Geometrie” <span class="t">A universal decomposition of orbifold Gromov–Witten invariants of root stacks</span></li>
+    <li><span class="when">Mar 2025</span> NTU Algebraic Geometry Seminar <span class="t">Moduli of twisted maps to smooth pairs</span></li>
+    <li><span class="when">Mar 2025</span> Duke Algebraic Geometry Seminar <span class="t">Moduli of twisted maps to smooth pairs</span></li>
+    <li><span class="when">Feb 2025</span> Frankfurt Tropical Seminar (TGIF) <span class="t">Moduli of twisted maps to smooth pairs</span></li>
+    <li><span class="when">Nov 2024</span> Bochum Algebraic Geometry Seminar <span class="t">Moduli of twisted maps to smooth pairs</span></li>
+    <li><span class="when">Oct 2024</span> Tropical Geometry: Moduli &amp; Matroids, Frankfurt <span class="t">Mod <i>r</i> tropical types and twisted maps</span></li>
+    <li><span class="when">Sep 2024</span> Heidelberg Algebraic Geometry Seminar (HAGS) <span class="t">Moduli of twisted maps to smooth pairs</span></li>
+    <li><span class="when">Jun 2024</span> Imperial Mirror Symmetry Learning Seminar <span class="t">Mirror symmetry for log Calabi–Yau surfaces</span></li>
+    <li><span class="when">Apr 2024</span> Colorado State University Algebraic Geometry Seminar <span class="t">Spaces of twisted maps to Artin fans</span></li>
+    <li><span class="when">Apr 2024</span> GLEN, St Andrews <span class="t">The geometry of the space of twisted maps to Artin fans</span></li>
+    <li><span class="when">Mar 2024</span> Lambda Seminar, SUSTech, Shenzhen <span class="t">The geometry of the space of twisted maps to Artin fans</span></li>
+    <li><span class="when">Oct 2023</span> Birmingham Algebraic Geometry Seminar <span class="t">The tropical geometry of orbifolds</span></li>
+    <li><span class="when">May 2023</span> <a href="https://sites.google.com/view/tropicalbristol/schedule?authuser=0">Tropical Days in Bristol</a> <span class="t">Tropical orbifold theory</span></li>
+    <li><span class="when">Dec 2022</span> Turing Maths Society <span class="t">Covering spaces and the étale fundamental group</span></li>
+    <li><span class="when">Apr 2022</span> <a href="https://mathematics.stanford.edu/events/classifying-del-pezzo-surfaces-mirror-symmetry">Stanford Algebraic Geometry Seminar</a> <span class="t">Classifying del Pezzo surfaces with mirror symmetry</span></li>
+    <li><span class="when">Jan 2022</span> <a href="https://www.math.ucdavis.edu/research/seminars?talk_id=6398">UC Davis Algebraic Geometry Seminar</a> <span class="t">Mirror symmetry of Fano orbifolds</span></li>
+  </ul>
+  <h3>Seminars and conferences organised</h3>
+  <ul class="talks org">
+    <li><span class="when">since 2024</span> <span><a href="https://sites.google.com/view/heidelbergag/preprintseminar">Heidelberg Algebraic Geometry Preprint Seminar</a>, with <a href="https://sites.google.com/view/qaasimshafi/">Qaasim Shafi</a>, every Tuesday</span></li>
+    <li><span class="when">since 2024</span> <span>Heidelberg Algebraic Geometry Seminar</span></li>
+    <li><span class="when">Feb 2026</span> <span>Moduli in Heidelberg (conference)</span></li>
+    <li><span class="when">2022–2024</span> <span>Fanosearch</span></li>
+    <li><span class="when">2022</span> <span>Virtual fundamental classes learning seminar</span></li>
+    <li><span class="when">2021–2022</span> <span>Imperial Junior Geometry Seminar</span></li>
+    <li><span class="when">2021</span> <span>Gross–Siebert program learning seminar</span></li>
+  </ul>
+  <h3>Other talks and learning seminars</h3>
+  <ul class="talks">
+    <li><span class="when">Mar 2024</span> QMUL Tropical Geometry Seminar <span class="t">Moduli of twisted maps to smooth pairs</span></li>
+    <li><span class="when">Feb 2024</span> A Panorama of Moduli Spaces, Frankfurt (lightning talk) <span class="t">Mod <i>r</i> tropical types and twisted maps</span></li>
+    <li><span class="when">Jan 2024</span> Fanosearch group meeting <span class="t">Tropical Hurwitz theory</span></li>
+    <li><span class="when">Nov 2023</span> Cambridge Junior Geometry Seminar <span class="t">The cohomology of moduli spaces</span></li>
+    <li><span class="when">May 2023</span> <a href="https://www.ucl.ac.uk/junior-geometry/archived/2023_05_25.html">KCL/UCL Junior Geometry Seminar</a> <span class="t">The topology of moduli spaces</span></li>
+    <li><span class="when">Feb 2023</span> <a href="https://www.imperial.ac.uk/events/157699/robert-crumplin-tba-junior-geometry-seminar/">Imperial Junior Geometry Seminar</a> <span class="t">Log geometry</span></li>
+    <li><span class="when">Jan 2023</span> Cambridge Junior Geometry Seminar <span class="t">Introduction to orbifold Gromov–Witten theory</span></li>
+    <li><span class="when">Nov 2022</span> Fanosearch group meeting <span class="t">Orbi-log cohomology</span></li>
+    <li><span class="when">Nov 2022</span> Virtual fundamental classes reading group <span class="t">Normal cones and Segre classes</span></li>
+    <li><span class="when">Nov 2022</span> Virtual fundamental classes reading group <span class="t">Intersection theory overview</span></li>
+    <li><span class="when">Oct 2022</span> Fanosearch group meeting <span class="t">Gromov–Witten theory of ℙ<sup>2</sup>|<i>E</i></span></li>
+    <li><span class="when">Mar 2022</span> Homological Mirror Symmetry learning seminar <span class="t">Hori–Vafa mirror symmetry</span></li>
+    <li><span class="when">Nov 2021</span> Gross–Siebert program learning seminar <span class="t">Log structures in the G–S program</span></li>
+    <li><span class="when">Nov 2021</span> Imperial Junior Geometry Seminar <span class="t">Du Val singularities and how to make them go away</span>
+        <span class="extras"><a href="https://ucl.zoom.us/rec/share/xtdATIGc_wm2ETVhyJhCMlzYJxaeUmzN3rsxMEWmZuKlfmt76clMu2FwpcPdJoxw.wP57qCmh5utXMrCZ">recording</a> (password: Geometry21-22)</span></li>
+    <li><span class="when">Sep 2021</span> Gross–Siebert program learning seminar <span class="t">Toric degenerations</span>
+        <span class="extras"><a href="https://drive.google.com/file/d/1DZgQ_iP8thOcMyJVMVOBUUNQLZdb5JQV/view?usp=sharing">slides</a></span></li>
+    <li><span class="when">Mar 2021</span> LSGNT Topics in Geometry <span class="t">Lagrangian Floer homology</span></li>
+    <li><span class="when">Nov 2020</span> LSGNT Topics in Geometry <span class="t">Toric geometry</span></li>
+    <li><span class="when">Nov 2020</span> Gromov–Witten learning seminar <span class="t">Quantum cohomology</span></li>
+    <li><span class="when">Sep 2020</span> Gromov–Witten learning seminar <span class="t">Moduli spaces of stable maps</span></li>
+    <li><span class="when">Sep 2020</span> Étale cohomology seminar <span class="t">Étale Poincaré duality</span></li>
+    <li><span class="when">May 2020</span> Étale cohomology seminar <span class="t">The étale fundamental group</span></li>
+  </ul>
+</template>
+
+<template id="page-contact">
+  <h2>Contact</h2>
+  <p>Email: <a href="mailto:rhc33@cantab.ac.uk">rhc33@cantab.ac.uk</a><br>
+     University email: rcrumplin (at) mathi.uni-heidelberg.de</p>
+  <p class="callout">I’m on the job market! My CV is
+     <a href="https://drive.google.com/file/d/1ywfNIXCKpKDPTYgbuejPuDhFOl5oMFEE/view?usp=sharing">here</a>.</p>
+  <p>Have a suggestion for examples of excellent mathematical communication in papers, talks, etc.?
+     I am compiling a list. <a href="https://forms.gle/dMhMpKxQLtuSFsjc8">Send it here!</a></p>
+</template>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   1. CONTENT: where each label goes. Edit this part.
+   ===================================================================== */
+const PAGES = {
+  about:    { label: 'about',                    href: '#about' },
+  research: { label: 'research',                 href: '#research' },
+  teaching: { label: 'teaching',                 href: '#teaching' },
+  talks:    { label: 'talks & seminars',         href: '#talks' },
+  tropical: { label: 'tropical geometry course', href: '#tropical' },
+  toric:    { label: 'toric geometry course',    href: '#toric' },
+  cv:       { label: 'CV',                       href: 'https://drive.google.com/file/d/1ywfNIXCKpKDPTYgbuejPuDhFOl5oMFEE/view?usp=sharing', newTab: true },
+  contact:  { label: 'contact',                  href: '#contact' },
+};
+// Which label in the figure opens which page.
+const SLOTS = {
+  x1:    { page: 'about',    sym: 'x₁' },
+  x2:    { page: 'research', sym: 'x₂' },
+  x3:    { page: 'teaching', sym: 'x₃' },
+  degen: { page: 'talks',    sym: 't → 0' },
+  trop:  { page: 'tropical', sym: 'trop' },
+  d1:    { page: 'toric',    sym: 'D₁' },
+  d2:    { page: 'contact',  sym: 'D₂' },
+};
+// Set to '_blank' (or '_top') when the figure is embedded in an iframe, e.g. a Google Sites
+// "Embed code" box. That turns off the in-page panels and makes the links plain links.
+const LINK_TARGET = null;
+const SPEED = 1;   // >1 makes the intro faster
+
+/* =====================================================================
+   2. GEOMETRY
+   The surface is a sheet with coordinates (u, v), u across and v into the page.
+   Degenerating folds it along the creases u = ±38 into Y₁, Y₂, Y₃. The curve
+   lies on the sheet: a genus-two outline whose holes sit on the creases. Its
+   four necks (above and below each hole) are multiplied by
+       neck(d) = sqrt((d² + r²) / (d² + σ²)),
+   which is 1 away from the crease and becomes the cone |d|/σ when r = 0: a node.
+   ===================================================================== */
+const G = {
+  W: 114, V: 66, creases: [-38, 38],   // the sheet X_t
+  fold: 34 * Math.PI / 180,            // fold angle of X_0 along D₁, D₂
+  kx: 0.25, ky: 0.78, kz: 0.85,        // oblique projection: depth slants left, height goes up
+  a: 96, b: 46, pow: 0.75,             // the curve: half-length, half-thickness, boxiness
+  w: 20, hh: 12,                       // its holes: half-width, half-height
+  p: 18,                               // the nodes sit at v = ±p on each crease
+  sigma: 16, sigmaH: 8,                // widths of the necks
+  R: 15.4,                             // neck radius on the smooth fibre (just under sigma)
+};
+const neck = (d, r, s) => Math.sqrt((d * d + r * r) / (d * d + s * s));
+const base = u => G.b * Math.pow(Math.max(0, 1 - (u / G.a) ** 2), G.pow / 2);
+function T(u, r) {                     // half-thickness of the curve at u
+  let m = 1;
+  for (const c of G.creases) m *= neck(u - c, r, G.sigma);
+  return G.p + (base(u) - G.p) * m;
+}
+function rim(u, c, r) {                // half-height of the hole centred on crease c
+  const s = (u - c) / G.w, h0 = G.hh * (1 - s * s);
+  return h0 + (G.p - h0) * (1 - neck(u - c, r * G.sigmaH / G.sigma, G.sigmaH));
+}
+// The fold: returns the map (u, v) -> screen point for fold amount s ∈ [0, 1].
+function folder(s) {
+  const al = G.fold * s, ca = Math.cos(al), sa = Math.sin(al);
+  const [c1, c2] = G.creases, mid = (c1 + G.W) / 2;
+  return (u, v) => {
+    const z = (u <= c1 ? u + G.W : u <= c2 ? (c1 + G.W) - (u - c1) : (c1 + G.W) - (c2 - c1) + (u - c2)) - mid;
+    return [u * ca - G.kx * v, G.ky * v - G.kz * z * sa];
+  };
+}
+const US = (() => {                    // sample points along the curve, plus the creases exactly
+  const s = new Set(), N = 160;
+  for (let i = 0; i <= N; i++) s.add(+(-G.a * Math.cos(Math.PI * i / N)).toFixed(3));
+  G.creases.forEach(c => s.add(c));
+  return [...s].sort((p, q) => p - q);
+})();
+const P = (x, y) => x.toFixed(2) + ' ' + y.toFixed(2);
+const poly = (pts, close) => 'M' + pts.map(q => P(...q)).join('L') + (close ? 'Z' : '');
+
+function outlineD(F, r) {
+  const top = US.map(u => F(u, -T(u, r)));
+  const bot = US.slice(1, -1).reverse().map(u => F(u, T(u, r)));
+  return poly(top.concat(bot), true);
+}
+function holeD(F, c, r) {
+  const pts = [];
+  for (let i = 0; i <= 40; i++) { const u = c - G.w + (2 * G.w * i) / 40; pts.push(F(u, -rim(u, c, r))); }
+  for (let i = 39; i >= 1; i--) { const u = c - G.w + (2 * G.w * i) / 40; pts.push(F(u, rim(u, c, r))); }
+  return poly(pts, true);
+}
+const sheetD = F => { const [c1, c2] = G.creases, W = G.W, V = G.V;
+  return poly([[-W, -V], [c1, -V], [c2, -V], [W, -V], [W, V], [c2, V], [c1, V], [-W, V]].map(q => F(...q)), true); };
+const quadD = (F, u0, u1) => poly([[u0, -G.V], [u1, -G.V], [u1, G.V], [u0, G.V]].map(q => F(...q)), true);
+
+/* =====================================================================
+   3. BUILDING THE SVG
+   ===================================================================== */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('fig');
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const T_ = s => (s / SPEED).toFixed(2) + 's';
+const dly = (s, dur) => `--d:${T_(s)}` + (dur ? `;--dur:${T_(dur)}` : '');
+
+// math label: parts = [[text, 'i' | '' | 'sub' | 'sub i'], ...]
+function mathText(parent, x, y, parts, { anchor = 'middle', cls = '', style, g } = {}) {
+  const t = el('text', { x, y, class: 'lab dim ' + cls, 'text-anchor': anchor, style, 'data-g': g }, parent);
+  let low = false;
+  for (const [s, kind] of parts) {
+    const isSub = kind.includes('sub');
+    const ts = el('tspan', { class: (isSub ? 'sub ' : '') + (kind.includes('i') ? 'i' : '') }, t);
+    if (isSub && !low) { ts.setAttribute('dy', 6); low = true; }
+    else if (!isSub && low) { ts.setAttribute('dy', -6); low = false; }
+    ts.textContent = s;
+  }
+  return t;
+}
+const sym = (letter, i) => [[letter, 'i'], [String(i), 'sub']];
+
+function figLink(parent, slotKey, light) {
+  const slot = SLOTS[slotKey], page = PAGES[slot.page];
+  const a = el('a', { class: 'fig-link', href: page.href, 'data-slot': slotKey, 'data-light': light,
+                      'aria-label': `${page.label} (${slot.sym})` }, parent);
+  if (LINK_TARGET) a.setAttribute('target', LINK_TARGET);
+  else if (page.newTab) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); }
+  return a;
+}
+function addHit(a, pad = 9) {
+  a.querySelectorAll('.hit').forEach(h => h.remove());
+  const b = a.getBBox();
+  a.insertBefore(el('rect', { class: 'hit', x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad,
+                              height: b.height + 2 * pad, rx: 8 }), a.firstChild);
+}
+
+const MARKS = { x1: [-74, 4], x2: [0, -26], x3: [76, -6] };     // marked points, sheet coordinates
+const CREASE_G = ['d1', 'd2'];
+
+// One copy of the surface with its curve. Returns update(s), s = 0 smooth/flat, 1 nodal/folded.
+function surface(parent, { links, t0 }) {
+  const g = el('g', {}, parent);
+  const dr = links ? ' draw' : '';
+  const fd = (dt) => links ? dly(t0 + dt) : null;
+  const shades = [[-G.W, G.creases[0]], G.creases, [G.creases[1], G.W]].map(([u0, u1], i) =>
+    ({ u0, u1, i, el: el('path', { class: 'shade' + (links ? ' fade' : ''), style: fd(0.2) }, g) }));
+  const sheet = el('path', { class: 'sheet dim' + dr, pathLength: 1, style: links ? dly(t0, 1.0) : null }, g);
+  const cfill = el('path', { class: 'cfill' + (links ? ' fade' : ''), style: fd(0.8) }, g);
+  const creases = G.creases.map((c, i) =>
+    el('path', { class: `crease ${CREASE_G[i]} dim`, 'data-g': CREASE_G[i], 'stroke-opacity': 0 }, g));
+  const outline = el('path', { class: 'ink dim' + dr, pathLength: 1, style: links ? dly(t0 + 0.4, 1.2) : null }, g);
+  const holes = G.creases.map(c => el('path', { class: 'ink thin dim' + dr, pathLength: 1, style: links ? dly(t0 + 0.9, 0.7) : null }, g));
+  const cycles = [];
+  G.creases.forEach((c, i) => {
+    for (const side of [-1, 1]) {
+      const gg = el('g', { class: links ? 'fade' : '', style: fd(1.5) }, g);
+      const gname = `${CREASE_G[i]} cyc`;
+      cycles.push({ c, side,
+        back:  el('path', { class: `cyc back ${CREASE_G[i]} dim`, 'data-g': gname }, gg),
+        front: el('path', { class: `cyc ${CREASE_G[i]} dim`, 'data-g': gname }, gg),
+        node:  el('circle', { class: `node ${CREASE_G[i]} dim`, 'data-g': `${CREASE_G[i]} node`, r: 4, 'fill-opacity': 0 }, gg) });
+    }
+  });
+  // marked points (with labels on the generic fibre)
+  const F0 = folder(0), dots = [];
+  for (const [id, [u, v]] of Object.entries(MARKS)) {
+    if (!links) { dots.push([u, v, el('circle', { class: 'pt dim', r: 3.4, 'data-g': id }, g)]); continue; }
+    const a = figLink(g, id, id);
+    const up = id !== 'x3', [px, py] = F0(u, v), [lx, ly] = F0(u, up ? -84 : 92), [ex, ey] = F0(u, up ? -76 : 80);
+    el('line', { class: 'leader dim fade', x1: ex, y1: ey, x2: px + (up ? 1.2 : -1.2), y2: py + (up ? -4.5 : 4.5), 'data-g': id, style: fd(1.2) }, a);
+    el('circle', { class: 'pt dim pop', cx: px, cy: py, r: 3.4, 'data-g': id, style: fd(1.1) }, a);
+    mathText(a, lx, ly + (up ? 0 : 8), sym('x', id[1]), { cls: 'fade', style: fd(1.2), g: id });
+  }
+  // labels that only the degenerate fibre has
+  let compLabs = [], dLabs = [];
+  if (!links) {
+    compLabs = [1, 2, 3].map(i => mathText(g, 0, 0, sym('Y', i), { cls: 'comp' }));
+    dLabs = G.creases.map((c, i) => {
+      const a = figLink(g, 'd' + (i + 1), CREASE_G[i]);
+      return mathText(a, 0, 0, sym('D', i + 1), { cls: CREASE_G[i], g: CREASE_G[i] });
+    });
+  }
+
+  function update(s) {
+    const F = folder(s), r = G.R * (1 - s);
+    for (const sh of shades) {
+      sh.el.setAttribute('d', quadD(F, sh.u0, sh.u1));
+      sh.el.setAttribute('fill-opacity', (0.045 + (sh.i === 1 ? 0.06 : -0.015) * s).toFixed(3));
+    }
+    sheet.setAttribute('d', sheetD(F));
+    const od = outlineD(F, r), hd = G.creases.map(c => holeD(F, c, r));
+    outline.setAttribute('d', od);
+    holes.forEach((h, i) => h.setAttribute('d', hd[i]));
+    cfill.setAttribute('d', od + hd.join(''));
+    creases.forEach((cr, i) => {
+      const c = G.creases[i];
+      cr.setAttribute('d', `M${P(...F(c, -G.V))}L${P(...F(c, G.V))}`);
+      cr.setAttribute('stroke-opacity', Math.min(1, s * 1.4).toFixed(3));
+    });
+    for (const cy of cycles) {
+      const inner = rim(cy.c, cy.c, r), outer = T(cy.c, r);
+      const vm = cy.side * (inner + outer) / 2, rv = (outer - inner) / 2, ru = 0.34 * rv;
+      if (rv < 0.4) { cy.front.setAttribute('d', ''); cy.back.setAttribute('d', ''); }
+      else {
+        const arc = (t0, t1) => { const pts = [];
+          for (let k = 0; k <= 18; k++) { const th = t0 + (t1 - t0) * k / 18; pts.push(F(cy.c + ru * Math.cos(th), vm + rv * Math.sin(th))); }
+          return poly(pts); };
+        cy.front.setAttribute('d', arc(-Math.PI / 2, Math.PI / 2));
+        cy.back.setAttribute('d', arc(Math.PI / 2, 1.5 * Math.PI));
+      }
+      const [nx, ny] = F(cy.c, cy.side * G.p);
+      cy.node.setAttribute('cx', nx.toFixed(2)); cy.node.setAttribute('cy', ny.toFixed(2));
+      cy.node.setAttribute('fill-opacity', Math.max(0, Math.min(1, (3 - rv) / 2.5)).toFixed(3));
+    }
+    for (const [u, v, d] of dots) { const [x, y] = F(u, v); d.setAttribute('cx', x.toFixed(2)); d.setAttribute('cy', y.toFixed(2)); }
+    const mids = [(-G.W + G.creases[0]) / 2, 0, (G.creases[1] + G.W) / 2];
+    compLabs.forEach((t, i) => { const [x, y] = F(mids[i], G.V); t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y + 26).toFixed(1)); });
+    dLabs.forEach((t, i) => { const [x, y] = F(G.creases[i], -G.V); t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y - 17).toFixed(1)); });
+  }
+  update(links ? 0 : 1);
+  return update;
+}
+
+// The tropical side: Γ (two "bananas", one over each edge of trop X) mapping down to trop X.
+function tropical(parent, t0) {
+  const g = el('g', {}, parent);
+  const xs = [-80, 0, 80], yG = -16, yX = 58, bulge = 22;
+  // trop X: a segment, one vertex per component Y_i, one edge per D_j
+  xs.slice(0, 2).forEach((x, i) =>
+    el('path', { class: `edge ${CREASE_G[i]} dim draw`, d: `M${P(x, yX)}L${P(xs[i + 1], yX)}`, pathLength: 1,
+                 'data-g': `${CREASE_G[i]} tx`, style: dly(t0, 0.5) }, g));
+  // projection lines u_i -> v_i
+  xs.forEach(x => el('line', { class: 'proj dim fade', x1: x, y1: yG + 10, x2: x, y2: yX - 9, 'data-g': 'proj', style: dly(t0 + 1.0) }, g));
+  // Γ: two edges over each edge of trop X
+  xs.slice(0, 2).forEach((x, i) => {
+    for (const sgn of [-1, 1]) {
+      const x1 = xs[i + 1], mx = (x + x1) / 2;
+      el('path', { class: `edge ${CREASE_G[i]} dim draw`, pathLength: 1, 'data-g': `${CREASE_G[i]} edge`,
+                   d: `M${P(x, yG)}Q${P(mx, yG + sgn * 2 * bulge)} ${P(x1, yG)}`, style: dly(t0 + 0.25, 0.8) }, g);
+    }
+  });
+  xs.forEach(x => el('circle', { class: 'tvtx dim pop', cx: x, cy: yX, r: 4, 'data-g': 'tx', style: dly(t0 + 0.3) }, g));
+  // legs for the marked points, one on each vertex of Γ
+  const legs = { x1: [xs[0], [-0.8, -0.6]], x2: [xs[1], [0, -1]], x3: [xs[2], [0.8, -0.6]] };
+  for (const [id, [x, d]] of Object.entries(legs)) {
+    const at = s => [x + s * d[0], yG + s * d[1]];
+    const a = figLink(g, id, id);
+    el('path', { class: 'leg dim draw', d: `M${P(...at(0))}L${P(...at(30))}`, pathLength: 1, 'data-g': id, style: dly(t0 + 0.8, 0.4) }, a);
+    el('path', { class: 'legtail dim fade', d: `M${P(...at(36))}L${P(...at(46))}`, 'data-g': id, style: dly(t0 + 1.0) }, a);
+    const [lx, ly] = at(d[1] === -1 ? 64 : 62);
+    mathText(a, lx, ly + 7, sym('x', id[1]), { cls: 'fade', style: dly(t0 + 1.05), g: id });
+  }
+  xs.forEach((x, i) => el('circle', { class: 'vtx dim pop', cx: x, cy: yG, r: 4.6, 'data-g': 'x' + (i + 1), style: dly(t0 + 0.6) }, g));
+}
+
+function arrow(parent, [x0, y0], [x1, y1], slot, labelParts, labelAt, anchor, t0, light) {
+  const a = figLink(parent, slot, light);
+  const len = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+  const h = (s, n) => P(x1 - 10 * ux + s * n * -uy, y1 - 10 * uy + s * n * ux);
+  // a squiggly shaft: a sine wave along the arrow, damped to zero at both ends
+  const run = len - 4, waves = Math.max(2, Math.round(run / 13)), A = 3.4, pts = [];
+  for (let k = 0; k <= waves * 12; k++) {
+    const t = k / (waves * 12), d = t * run;
+    const env = Math.min(1, t / 0.12, (1 - t) / 0.12);
+    const off = A * env * Math.sin(2 * Math.PI * waves * t);
+    pts.push(P(x0 + d * ux - off * uy, y0 + d * uy + off * ux));
+  }
+  el('path', { class: 'arrow dim draw', pathLength: 1, 'data-g': slot,
+               d: `M${pts.join('L')}L${P(x1, y1)}M${h(1, 6)}L${P(x1, y1)}L${h(-1, 6)}`, style: dly(t0, 0.6) }, a);
+  mathText(a, labelAt[0], labelAt[1], labelParts, { anchor, cls: 'fade', style: dly(t0 + 0.3), g: slot });
+}
+
+const LAYOUTS = {
+  wide: { viewBox: '8 68 992 230', A: [146, 172], B: [506, 172], C: [858, 172], name: 106,
+          arrows: [[[286, 172], [362, 172]], [[648, 172], [722, 172]]], lab: m => [m[0], m[1] - 14], anchor: 'middle' },
+  tall: { viewBox: '6 70 292 830', A: [150, 165], B: [150, 445], C: [150, 730], name: 106,
+          arrows: [[[150, 284], [150, 340]], [[150, 564], [150, 620]]], lab: m => [m[0] + 16, m[1] + 7], anchor: 'start' },
+};
+
+let morphB = null;
+function build(name) {
+  const Lyt = LAYOUTS[name];
+  svg.replaceChildren();
+  svg.setAttribute('viewBox', Lyt.viewBox);
+  const at = ([x, y]) => el('g', { transform: `translate(${x} ${y})` }, svg);
+  const names = (g, parts, d) => mathText(g, 0, Lyt.name, parts, { cls: 'name fade', style: dly(d) });
+
+  const gA = at(Lyt.A);
+  surface(gA, { links: true, t0: 0 });
+  names(gA, [['C', 'i'], ['t', 'sub i'], [' ⊂ ', ''], ['X', 'i'], ['t', 'sub i']], 1.2);
+
+  const gB = at(Lyt.B);
+  const gBin = el('g', { class: 'fade', style: dly(1.9) }, gB);
+  morphB = surface(gBin, { links: false, t0: 0 });
+  names(gB, [['C', 'i'], ['0', 'sub'], [' ⊂ ', ''], ['X', 'i'], ['0', 'sub']], 2.0);
+
+  const gC = at(Lyt.C);
+  tropical(gC, 4.2);
+  names(gC, [['Γ → trop ', ''], ['X', 'i']], 5.2);
+
+  const [a1, a2] = Lyt.arrows;
+  const mid = ([p, q]) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+  arrow(svg, ...a1, 'degen', [['t', 'i'], [' → 0', '']], Lyt.lab(mid(a1)), Lyt.anchor, 1.6, 'degen cyc');
+  arrow(svg, ...a2, 'trop', [['trop', '']], Lyt.lab(mid(a2)), Lyt.anchor, 3.9, 'trop node edge proj');
+
+  svg.querySelectorAll('.fig-link').forEach(a => { addHit(a); wireLink(a); });
+}
+
+/* =====================================================================
+   4. INTRO: CSS draws/fades the static strokes; JS drives the degeneration.
+   ===================================================================== */
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+let raf = 0, introTimer = 0;
+const ease = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+
+function playIntro() {
+  cancelAnimationFrame(raf); clearTimeout(introTimer);
+  if (reduceMotion()) { svg.classList.remove('intro'); morphB(1); return; }
+  svg.classList.remove('intro'); void svg.getBoundingClientRect(); svg.classList.add('intro');
+  morphB(0);
+  const start = performance.now() + 2300 / SPEED, dur = 1800 / SPEED;
+  const step = now => {
+    const p = Math.max(0, Math.min(1, (now - start) / dur));
+    morphB(ease(p));
+    if (p < 1) raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  introTimer = setTimeout(() => svg.classList.remove('intro'), 6000 / SPEED);
+}
+
+/* =====================================================================
+   5. HOVER: light up the pieces that correspond to the hovered label
+   (D_j ↔ its vanishing cycles ↔ nodes on it ↔ edges of Γ over it; x_i ↔ vertex and leg)
+   ===================================================================== */
+const caption = document.getElementById('caption'), hint = document.getElementById('hint');
+function light(a, on) {
+  svg.querySelectorAll('.lit').forEach(n => n.classList.remove('lit'));
+  svg.classList.toggle('focusing', on);
+  caption.classList.toggle('hinting', on);
+  if (!on) return;
+  for (const g of a.dataset.light.split(' ')) svg.querySelectorAll(`[data-g~="${g}"]`).forEach(n => n.classList.add('lit'));
+  const slot = SLOTS[a.dataset.slot];
+  hint.textContent = `${slot.sym}  —  ${PAGES[slot.page].label}`;
+}
+function wireLink(a) {
+  a.addEventListener('pointerenter', () => light(a, true));
+  a.addEventListener('pointerleave', () => light(a, false));
+  a.addEventListener('focus', () => light(a, true));
+  a.addEventListener('blur', () => light(a, false));
+  a.addEventListener('click', e => {
+    const page = PAGES[SLOTS[a.dataset.slot].page];
+    if (LINK_TARGET || page.newTab) return;
+    e.preventDefault();
+    openPanel(SLOTS[a.dataset.slot].page, a.querySelector('.pt, .vtx') || a);
+  });
+}
+
+/* =====================================================================
+   6. PANELS: fetch the page, show it in a <dialog>, reveal with a circle
+   ===================================================================== */
+const panel = document.getElementById('panel'), content = document.getElementById('panel-content');
+let origin = null, noHistory = false;
+
+async function loadContent(key) {
+  const tpl = document.getElementById('page-' + key);
+  if (tpl) return [...tpl.content.cloneNode(true).childNodes];
+  const url = new URL(PAGES[key].href, location.href);
+  if (url.origin !== location.origin) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok || !(res.headers.get('content-type') || '').includes('text/html')) return null;
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const main = doc.querySelector('#panel-content, main');
+    if (!main) return null;
+    main.querySelectorAll('script').forEach(s => s.remove());
+    return [...main.childNodes];
+  } catch { return null; }
+}
+function circleAt(r) {
+  const b = (origin && origin.isConnected ? origin : svg).getBoundingClientRect();
+  const x = b.left + b.width / 2, y = b.top + b.height / 2;
+  const far = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  return `circle(${r < 0 ? far : r}px at ${x}px ${y}px)`;
+}
+async function openPanel(key, from, { animate = true, push = true } = {}) {
+  const nodes = await loadContent(key);
+  if (!nodes) { location.href = PAGES[key].href; return; }
+  const wasOpen = panel.open;
+  content.replaceChildren(...nodes);
+  content.querySelectorAll('a[href^="http"]').forEach(l => { l.target = '_blank'; l.rel = 'noopener'; });
+  if (from) origin = from;
+  if (!wasOpen) panel.showModal();
+  panel.scrollTop = 0;
+  if (push && !noHistory) {
+    try { history.pushState({ panel: key }, '', PAGES[key].href); } catch { noHistory = true; }
+  }
+  if (!animate || reduceMotion() || !panel.animate) return;
+  if (wasOpen) {
+    content.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }],
+                    { duration: 260, easing: 'ease-out' });
+  } else {
+    panel.animate([{ clipPath: circleAt(0) }, { clipPath: circleAt(-1) }],
+                  { duration: 560, easing: 'cubic-bezier(.7,0,.2,1)' });
+  }
+}
+function closePanel() {
+  if (!panel.open) return;
+  const done = () => { panel.close(); content.replaceChildren(); };
+  if (reduceMotion() || !panel.animate) return done();
+  const anim = panel.animate([{ clipPath: circleAt(-1) }, { clipPath: circleAt(0) }],
+                             { duration: 360, easing: 'cubic-bezier(.6,0,.4,1)', fill: 'forwards' });
+  anim.onfinish = () => { done(); anim.cancel(); };
+}
+function requestClose() {
+  if (!noHistory && history.state && history.state.panel) history.back(); else closePanel();
+}
+panel.querySelector('.panel-close').addEventListener('click', requestClose);
+content.addEventListener('click', e => {             // a link to another page of the site: swap the panel's contents
+  const l = e.target.closest('a[href^="#"]');
+  const key = l && l.getAttribute('href').slice(1);
+  if (!key || !document.getElementById('page-' + key)) return;
+  e.preventDefault();
+  openPanel(key, null);
+});
+panel.addEventListener('cancel', e => { e.preventDefault(); requestClose(); });   // Esc
+addEventListener('popstate', e => {
+  const key = e.state && e.state.panel;
+  if (key) openPanel(key, null, { animate: false, push: false }); else closePanel();
+});
+
+/* =====================================================================
+   7. START
+   ===================================================================== */
+const textnav = document.getElementById('textnav');
+for (const [key, p] of Object.entries(PAGES)) {
+  const a = document.createElement('a');
+  a.href = p.href; a.textContent = p.label;
+  if (LINK_TARGET) a.target = LINK_TARGET;
+  else if (p.newTab) { a.target = '_blank'; a.rel = 'noopener'; }
+  else a.addEventListener('click', e => { e.preventDefault(); openPanel(key, a); });
+  textnav.append(a, ' ');
+}
+document.getElementById('replay').addEventListener('click', playIntro);
+document.querySelectorAll('[data-panel]').forEach(a => a.addEventListener('click', e => {   // e.g. the job-market line
+  if (LINK_TARGET) return;
+  e.preventDefault(); openPanel(a.dataset.panel, a);
+}));
+
+const narrow = matchMedia('(max-width: 640px)');
+build(narrow.matches ? 'tall' : 'wide');
+playIntro();
+narrow.addEventListener('change', () => {          // re-lay out, showing the final state
+  cancelAnimationFrame(raf); clearTimeout(introTimer);
+  svg.classList.remove('intro');
+  build(narrow.matches ? 'tall' : 'wide');
+  morphB(1);
+});
+
+// deep link, e.g. …/#teaching, or …/?p=teaching (what the redirects from the old site addresses use)
+const startKey = location.hash.slice(1) || new URLSearchParams(location.search).get('p') || '';
+if (PAGES[startKey] && document.getElementById('page-' + startKey)) {
+  try {
+    history.replaceState(null, '', location.pathname);
+    history.pushState({ panel: startKey }, '', '#' + startKey);
+  } catch { noHistory = true; }
+  openPanel(startKey, null, { animate: false, push: false });
+}
+})();
+</script>
+</body>
+</html>

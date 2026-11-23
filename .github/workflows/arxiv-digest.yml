@@ -1,0 +1,43 @@
+# Every morning: read the day's arXiv announcements, update the unlisted digest page
+# (arxiv-1bhec9p544/), commit it, and ask GitHub Pages to republish the site.
+# Run it by hand from the Actions tab with "Run workflow".
+name: arXiv digest
+
+on:
+  schedule:
+    - cron: '41 5 * * *'   # 05:41 UTC daily, after arXiv refreshes its feeds (about 05:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to commit the page
+  pages: write      # to request a Pages build
+
+concurrency:
+  group: arxiv-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build the digest
+        run: python .github/arxiv_digest.py
+      - name: Commit and publish
+        run: |
+          if [ -z "$(git status --porcelain arxiv-1bhec9p544)" ]; then echo "Nothing new today."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add arxiv-1bhec9p544
+          git commit -m "arXiv digest $(date -u +%F)"
+          git push
+          # A push made with GITHUB_TOKEN does not trigger a Pages build by itself, so request one.
+          curl -fsS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds" \
+            || echo "::warning::Could not request a Pages build; the page will update at the next push."

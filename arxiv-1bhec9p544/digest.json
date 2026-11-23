@@ -1,0 +1,29 @@
+{
+ "days": [
+  {
+   "date": "2026-11-23",
+   "total": 119,
+   "papers": [
+    {
+     "id": "2611.27238",
+     "kind": "new",
+     "title": "Combinatorial relative orientability for toric and tropical geometry",
+     "authors": "Nathan Tiggemann",
+     "categories": [
+      "math.AG"
+     ],
+     "score": 17,
+     "tags": [
+      "tropical geometry",
+      "enumerative",
+      "tropicalization",
+      "tropical",
+      "toric"
+     ],
+     "people": [],
+     "snippet": "Many problems in enumerative geometry are solved by computing the degree of the top Chern class of a suitable vector bundle. Results from $\\mathbb{A}^1$-homotopy theory allow to answer enumerative questions over arbitrary fields, replacing the top Chern class by the Euler class in Chow-Witt groups. For its degree to be well-defined, one needs the vector bundle to be relatively oriented."
+    }
+   ]
+  }
+ ]
+}

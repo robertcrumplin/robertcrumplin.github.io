@@ -63,6 +63,10 @@
   figcaption.hinting .hint { display: block; }
   figcaption.hinting .default { display: none; }
   .replay { font: inherit; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; }
+  .figref { color: var(--muted); text-decoration: underline dotted; text-underline-offset: 2px; white-space: nowrap; }
+  .figref:hover { color: var(--ink); }
+  /* on wide screens, keep the taller figures short enough that the top of the bio shows below */
+  @media (min-width: 641px) { .fig { max-height: 250px; } }
 
   .textnav { text-align: center; padding: 1.25rem 1rem 0; font-size: .95rem; color: var(--muted); }
   .textnav a { text-decoration: none; margin: 0 .45rem; white-space: nowrap; }
@@ -216,14 +220,16 @@
         glued along <i>D</i><sub>1</sub> and <i>D</i><sub>2</sub>. The genus-two curve <i>C<sub>t</sub></i>&nbsp;⊂&nbsp;<i>X<sub>t</sub></i>
         breaks with it into three rational pieces, one in each <i>Y<sub>i</sub></i>, meeting in pairs of nodes on the <i>D<sub>j</sub></i>.
         Tropicalising gives a genus-two tropical curve Γ mapping to trop&nbsp;<i>X</i>.
-        <button class="replay" type="button">replay</button>
+        <button class="replay" type="button">replay</button> ·
+        <a class="figref" href="https://arxiv.org/abs/math/0110113" title="J. Li, A degeneration formula of GW-invariants, J. Differential Geom. 60 (2002)" target="_blank" rel="noopener">Li 2002</a>
       </span>
       <span class="default" data-fig="scatter" hidden>
         A toric surface, whose boundary is a triangle of lines, has the trivial scattering diagram on ℝ<sup>2</sup>.
         Blowing up a point on each of two of the lines adds an initial wall in each of the corresponding directions;
         scattering them produces one more ray, and the consistent diagram has five rays. Two broken lines come in
         parallel and cross a wall, one going straight on and one bending, and both end at the same point <i>Q</i>.
-        <button class="replay" type="button">replay</button>
+        <button class="replay" type="button">replay</button> ·
+        <a class="figref" href="https://arxiv.org/abs/0902.0779" title="M. Gross, R. Pandharipande and B. Siebert, The tropical vertex, Duke Math. J. 153 (2010)" target="_blank" rel="noopener">Gross–Pandharipande–Siebert 2010</a>
       </span>
       <span class="default" data-fig="vz" hidden>
         A genus-one curve whose elliptic component <i>E</i> is contracted, with rational tails <i>R</i><sub>1</sub> and <i>R</i><sub>2</sub>,
@@ -231,14 +237,16 @@
         where it is singular. The Vakil–Zinger blowups, tropically the radial alignment ordering the tails by their distance
         from the core, subdivide the cone of edge lengths along ℓ<sub>1</sub>&nbsp;=&nbsp;ℓ<sub>2</sub>, kill the excess component,
         and leave the main component smooth.
-        <button class="replay" type="button">replay</button>
+        <button class="replay" type="button">replay</button> ·
+        <a class="figref" href="https://arxiv.org/abs/math/0603353" title="R. Vakil and A. Zinger, A desingularization of the main component of the moduli space of genus-one stable maps into Pⁿ, Geom. Topol. 12 (2008)" target="_blank" rel="noopener">Vakil–Zinger 2008</a>
       </span>
       <span class="default" data-fig="blowup" hidden>
         The space NLog<sub>Λ</sub>(<i>X</i>|<i>D</i>) has a main component and an excess component,
         each labelled by its naive tropical type. Blowing up the point where the two components of <i>D</i> meet
         subdivides the cone by the red ray, and for the blown-up pair the excess component disappears,
         leaving just the main component.
-        <button class="replay" type="button">replay</button>
+        <button class="replay" type="button">replay</button> ·
+        <a class="figref" href="https://arxiv.org/abs/1908.04706" title="N. Nabijou and D. Ranganathan, Gromov–Witten theory with maximal contacts, Forum Math. Sigma 10 (2022)" target="_blank" rel="noopener">Nabijou–Ranganathan 2022</a>
       </span>
       <span class="hint" id="hint" aria-hidden="true"></span>
     </figcaption>

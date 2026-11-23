@@ -115,11 +115,17 @@
   .tdot     { fill: var(--ink); }
   .tilde    { fill: none; stroke: var(--ink); stroke-width: 1.25; stroke-linecap: round; }
   .tilde.name { stroke: var(--muted); }
+  .lab.dA { fill: var(--dA); stroke: none; }  .lab.dB { fill: var(--dB); stroke: none; }  .lab.exc { fill: var(--exc); }
+  .hitline  { fill: none; stroke: transparent; stroke-width: 16; stroke-linecap: round; pointer-events: stroke; }
+  .nohit    { pointer-events: none; }
+  .lit.dcurve { stroke-width: 3.3; }  .lit.ecurve { stroke-width: 3.5; }  .lit.blob { stroke-width: 2.3; }
+  .lit.ax, .lit.tleg, .lit.rray { stroke-width: 2.5; }
 
   .fig-link { cursor: pointer; outline: none; }
   .fig-link .hit { fill: transparent; stroke: none; pointer-events: all; }
-  .fig-link:hover .lab:not(.d1):not(.d2),
-  .fig-link:focus-visible .lab:not(.d1):not(.d2) { fill: var(--accent); }
+  .fig-link:hover .lab:not(.d1):not(.d2):not(.dA):not(.dB):not(.exc),
+  .fig-link:focus-visible .lab:not(.d1):not(.d2):not(.dA):not(.dB):not(.exc) { fill: var(--accent); }
+  .fig-link:hover .tilde.name, .fig-link:focus-visible .tilde.name { stroke: var(--accent); }
   .fig-link:focus-visible .hit { stroke: var(--rule); stroke-width: 1.5; stroke-dasharray: 3 3; }
 
   /* hover: dim everything except the pieces that correspond to the hovered label */
@@ -448,18 +454,24 @@ const PAGES = {
   cv:       { label: 'CV',                       href: 'https://drive.google.com/file/d/1ywfNIXCKpKDPTYgbuejPuDhFOl5oMFEE/view?usp=sharing', newTab: true },
   contact:  { label: 'contact',                  href: '#contact' },
 };
-// Which label in the figure opens which page.
+// Which part of a figure opens which page.
 const SLOTS = {
-  x1:    { page: 'about',    sym: 'x₁' },
-  x2:    { page: 'research', sym: 'x₂' },
-  x3:    { page: 'teaching', sym: 'x₃' },
-  degen: { page: 'talks',    sym: 't → 0' },
-  trop:  { page: 'tropical', sym: 'trop' },
-  d1:    { page: 'toric',    sym: 'D₁' },
-  d2:    { page: 'contact',  sym: 'D₂' },
+  // the degeneration figure
+  x1:     { page: 'about',    sym: 'x₁' },
+  x2:     { page: 'research', sym: 'x₂' },
+  x3:     { page: 'teaching', sym: 'x₃' },
+  degen:  { page: 'talks',    sym: 't → 0' },
+  trop:   { page: 'tropical', sym: 'trop' },
+  // both figures
+  d1:     { page: 'toric',    sym: 'D₁' },
+  d2:     { page: 'contact',  sym: 'D₂' },
+  // the blowup figure
+  pair:   { page: 'about',    sym: '(X|D)' },
+  exc:    { page: 'talks',    sym: 'E' },
+  main:   { page: 'research', sym: 'main component' },
+  excess: { page: 'teaching', sym: 'excess component' },
+  types:  { page: 'tropical', sym: 'tropical types' },
 };
-// (The blowup figure has parts that can be linked too: pair (the picture of (X|D)), main and excess
-// (the two components of NLog). None are linked yet.)
 // Set to '_blank' (or '_top') when the figure is embedded in an iframe, e.g. a Google Sites
 // "Embed code" box. That turns off the in-page panels and makes the links plain links.
 const LINK_TARGET = null;
@@ -509,7 +521,7 @@ function placeTildes() {
         let b; try { b = t.getExtentOfChar(idx); } catch { b = null; }
         if (b) {
           const cx = b.x + b.width / 2 + 0.1 * fs, ty = base - 0.85 * fs, w = 0.46 * fs, a = 0.06 * fs;
-          el('path', { class: 'tilde ' + (t.classList.contains('name') ? 'name' : ''),
+          el('path', { class: 'tilde ' + [...t.classList].filter(c => c !== 'lab').join(' '), 'data-g': t.getAttribute('data-g'),
                        d: `M${P(cx - w / 2, ty + 0.6 * a)}C${P(cx - w / 4, ty - 1.9 * a)} ${P(cx + w / 4, ty + 1.9 * a)} ${P(cx + w / 2, ty - 0.6 * a)}` },
              t.parentNode);
         }
@@ -528,9 +540,9 @@ function figLink(parent, slotKey, light) {
   return a;
 }
 // a link if SLOTS gives this part of the figure a page, otherwise a plain group
-function addHit(a, pad = 9) {
+function addHit(a, pad = 9, around = a) {
   a.querySelectorAll('.hit').forEach(h => h.remove());
-  const b = a.getBBox();
+  const b = around.getBBox();
   a.insertBefore(el('rect', { class: 'hit', x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad,
                               height: b.height + 2 * pad, rx: 8 }), a.firstChild);
 }
@@ -838,8 +850,9 @@ function blowupFigure() {
   const PAIR = {
     blob: [[-114, -6], [-96, -56], [-36, -80], [40, -74], [100, -46], [120, 6], [96, 56], [28, 76], [-50, 72], [-102, 42]],
     p: [-46, 32],                                   // the vertex D₁ ∩ D₂
-    D: [{ dir: unit([1, -0.04]), len: 168, bow: -10, g: 'dA' },     // D₁, running right
-        { dir: unit([0.12, -1]), len: 112, bow: 9, g: 'dB' }],      // D₂, running up
+    D: [{ dir: unit([1, -0.04]), len: 168, bow: -10, g: 'dA', lab: [127, 22] },     // D₁, running right
+        { dir: unit([0.12, -1]), len: 112, bow: 9, g: 'dB', lab: [-14, -86] }],      // D₂, running up
+    Elab: [-66, 60],                                // where E is labelled once it appears
     tail: 15,                                       // how far each D_i runs past the vertex
     cut: 32,                                        // the blowup cuts the corner this far along each D_i
     eTail: 11, eBow: 4,                             // E: overhang past D̃₁, D̃₂, and its bulge towards p
@@ -906,57 +919,79 @@ function blowupFigure() {
   /* ---------------------------------------------------------------------
      Building the SVG
      --------------------------------------------------------------------- */
-  const linkOr = (parent, key) => SLOTS[key] ? figLink(parent, key, key) : el('g', {}, parent);
+  const linkOr = (parent, key, light = key) => SLOTS[key] ? figLink(parent, key, light) : el('g', {}, parent);
   // the label under a panel: an outer group fades in with the intro, an inner one is faded by script
-  function panelName(parent, x, y, parts, d) {
+  function panelName(parent, x, y, parts, d, { cls = 'name', g, anchor } = {}) {
     const outer = el('g', { class: d == null ? '' : 'fade', style: d == null ? null : dly(d) }, parent);
     const inner = el('g', {}, outer);
-    mathText(inner, x, y, parts, { cls: 'name' });
+    mathText(inner, x, y, parts, { cls, g, anchor });
     return inner;
   }
   const pair = tl => [['(', ''], ['X', 'i' + tl], ['|', ''], ['D', 'i' + tl], [')', '']];
 
   // ---- left panel: (X|D), and its blowup ----
+  // Links: the surface and its label (slot 'pair'), D₁ and D₂ (slots 'd1', 'd2', shared with the other
+  // figure), and E ('exc'). Each curve carries an invisible wide stroke so that it is easy to point at.
   let clipN = 0;
   function pairPanel(g, t0) {
     const id = 'blobclip' + (clipN++);
     el('path', { d: blobD(PAIR.blob) }, el('clipPath', { id }, g));
-    const body = linkOr(g, 'pair');
-    el('path', { class: 'blobfill fade fitme', d: blobD(PAIR.blob), style: dly(t0 + 0.3) }, body);
-    const inside = el('g', { 'clip-path': `url(#${id})` }, body);
-    const Ds = PAIR.D.map((D, i) => el('path', { class: `dcurve ${D.g} dim draw`, pathLength: 1, 'data-g': D.g,
-                                                style: dly(t0 + 0.7 + 0.15 * i, 0.6) }, inside));
-    const E = el('path', { class: 'ecurve dim', 'data-g': 'exc' }, inside);
-    el('path', { class: 'blob dim draw', d: blobD(PAIR.blob), pathLength: 1, style: dly(t0, 1.0) }, body);
-    const vtx = el('circle', { class: 'pt dim pop', cx: PAIR.p[0], cy: PAIR.p[1], r: 3.6, style: dly(t0 + 1.35) }, body);
-    const corners = [q1, q2].map(q => el('circle', { class: 'pt dim', cx: q[0], cy: q[1], r: 0 }, body));
-    const labs = el('g', {}, g);
-    const l0 = panelName(labs, 0, 116, pair(''), t0 + 1.4), l1 = panelName(labs, 0, 116, pair(' tilde'));
+    const X = linkOr(g, 'pair', 'pairX');
+    el('path', { class: 'blobfill fade fitme', d: blobD(PAIR.blob), style: dly(t0 + 0.3) }, X);
+    el('path', { class: 'blob dim draw', d: blobD(PAIR.blob), pathLength: 1, 'data-g': 'pairX', style: dly(t0, 1.0) }, X);
+    const labs = el('g', {}, X);
+    const l0 = panelName(labs, 0, 116, pair(''), t0 + 1.4, { g: 'pairX' }),
+          l1 = panelName(labs, 0, 116, pair(' tilde'), null, { g: 'pairX' });
+
+    const curveLink = (key, gname) => {
+      const a = linkOr(g, key, gname);
+      return { a, inside: el('g', { 'clip-path': `url(#${id})` }, a) };
+    };
+    const Ds = PAIR.D.map((D, i) => {
+      const { a, inside } = curveLink(['d1', 'd2'][i], D.g);
+      const hit = el('path', { class: 'hitline' }, inside);
+      const vis = el('path', { class: `dcurve ${D.g} dim draw`, pathLength: 1, 'data-g': D.g, style: dly(t0 + 0.7 + 0.15 * i, 0.6) }, inside);
+      const sub = String(i + 1), [lx, ly] = D.lab, o = { cls: D.g, g: D.g, anchor: 'start' };
+      const m0 = panelName(a, lx, ly, [['D', 'i'], [sub, 'sub']], t0 + 1.2 + 0.15 * i, o),
+            m1 = panelName(a, lx, ly, [['D', 'i tilde'], [sub, 'sub']], null, o);
+      return { hit, vis, m0, m1 };
+    });
+    const Ek = curveLink('exc', 'exc');
+    const Ehit = el('path', { class: 'hitline' }, Ek.inside);
+    const E = el('path', { class: 'ecurve dim', 'data-g': 'exc' }, Ek.inside);
+    const Elab = panelName(Ek.a, ...PAIR.Elab, [['E', 'i']], null, { cls: 'exc', g: 'exc' });
+
+    const dots = el('g', { class: 'nohit' }, g);
+    const vtx = el('circle', { class: 'pt dim pop', cx: PAIR.p[0], cy: PAIR.p[1], r: 3.6, style: dly(t0 + 1.35) }, dots);
+    const corners = [q1, q2].map(q => el('circle', { class: 'pt dim', cx: q[0], cy: q[1], r: 0 }, dots));
     const eLen = Math.hypot(q2[0] - q1[0], q2[1] - q1[1]), et = PAIR.eTail / eLen;
 
     return s => {
+      const k = clamp01((s - 0.3) / 0.55);
       PAIR.D.forEach((D, i) => {
-        const t0_ = lerp(-PAIR.tail, PAIR.cut - PAIR.eTail, s) / D.len;
-        Ds[i].setAttribute('d', curve(tau => gam(i, tau), t0_, 1.12));
+        const t0_ = lerp(-PAIR.tail, PAIR.cut - PAIR.eTail, s) / D.len, d = curve(tau => gam(i, tau), t0_, 1.12);
+        Ds[i].vis.setAttribute('d', d); Ds[i].hit.setAttribute('d', d);
+        Ds[i].m0.setAttribute('opacity', (1 - k).toFixed(3)); Ds[i].m1.setAttribute('opacity', k.toFixed(3));
       });
-      if (s < 0.004) E.setAttribute('d', '');
-      else E.setAttribute('d', curve(sig => add(PAIR.p, add(Ecurve(sig), PAIR.p, -1), s), -et, 1 + et, 24));
+      const ed = s < 0.004 ? '' : curve(sig => add(PAIR.p, add(Ecurve(sig), PAIR.p, -1), s), -et, 1 + et, 24);
+      E.setAttribute('d', ed); Ehit.setAttribute('d', ed);
+      Elab.setAttribute('opacity', clamp01((s - 0.6) / 0.35).toFixed(3));
+      Ek.a.style.visibility = s > 0.05 ? '' : 'hidden';
       vtx.setAttribute('r', (3.6 * (1 - clamp01(s / 0.35))).toFixed(2));
       corners.forEach(c => c.setAttribute('r', (3.2 * clamp01((s - 0.78) / 0.22)).toFixed(2)));
-      const k = clamp01((s - 0.3) / 0.55);
       l0.setAttribute('opacity', (1 - k).toFixed(3)); l1.setAttribute('opacity', k.toFixed(3));
     };
   }
 
   // ---- a naive tropical type in the cone R²≥0; at(x, y) puts a point of the picture (y up) on screen ----
   function typePic(parent, at, L, kind, t0) {
-    const g = el('g', { class: 'tpic' }, parent);
+    const g = el('g', { class: 'tpic' }, parent), tag = gname => `${gname} trop ${kind}`;
     const seg = (p, q) => `M${P(...at(...p))}L${P(...at(...q))}`;
     const sc = (d, t) => [d[0] * t, d[1] * t];
     el('path', { class: 'cone fade', d: poly([at(0, 0), at(L, 0), at(L, L), at(0, L)], true), style: dly(t0) }, g);
     const ray = (cls, d, len, t, gname) => {
-      el('path', { class: `${cls} dim draw`, d: seg([0, 0], sc(d, len)), pathLength: 1, 'data-g': gname, style: dly(t, 0.45) }, g);
-      el('path', { class: `${cls} ttail dim fade`, d: seg(sc(d, len + 4.5), sc(d, len + 13)), 'data-g': gname, style: dly(t + 0.35) }, g);
+      el('path', { class: `${cls} dim draw`, d: seg([0, 0], sc(d, len)), pathLength: 1, 'data-g': tag(gname), style: dly(t, 0.45) }, g);
+      el('path', { class: `${cls} ttail dim fade`, d: seg(sc(d, len + 4.5), sc(d, len + 13)), 'data-g': tag(gname), style: dly(t + 0.35) }, g);
     };
     ray('ax dA', [1, 0], L, t0, 'dA');
     ray('ax dB', [0, 1], L, t0 + 0.08, 'dB');
@@ -965,17 +1000,17 @@ function blowupFigure() {
       // the interior vertex, with its two dashed rays pointing back the way the legs came
       const V = sc(TYPE.inner, L), back = (d, t) => [V[0] - d[0] * t, V[1] - d[1] * t];
       for (const d of TYPE.legs)
-        el('path', { class: 'tdash dim fade', d: seg(back(d, 3.6), back(d, TYPE.dash * L)), style: dly(t0 + 0.75) }, g);
-      el('circle', { class: 'tdot dim pop', cx: at(...V)[0], cy: at(...V)[1], r: 2.9, style: dly(t0 + 0.65) }, g);
+        el('path', { class: 'tdash dim fade', d: seg(back(d, 3.6), back(d, TYPE.dash * L)), 'data-g': tag('leg'), style: dly(t0 + 0.75) }, g);
+      el('circle', { class: 'tdot dim pop', cx: at(...V)[0], cy: at(...V)[1], r: 2.9, 'data-g': tag('vtx'), style: dly(t0 + 0.65) }, g);
     }
     // the red diagonal ray of the subdivision, drawn by script
-    const red = el('path', { class: 'rray dim', 'data-g': 'exc', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1,
+    const red = el('path', { class: 'rray dim', 'data-g': tag('exc'), pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1,
                              d: seg([0, 0], [L, L]) }, g);
     const k = Math.SQRT1_2;
-    const redTail = el('path', { class: 'rray ttail dim', 'data-g': 'exc', opacity: 0,
-                                 d: seg([L + 4.5 * k, L + 4.5 * k], [L + 13 * k, L + 13 * k]) }, g);
+    const redTail = el('g', { opacity: 0 }, g);       // faded by script (on a group, so hover dimming can't show it early)
+    el('path', { class: 'rray ttail dim', 'data-g': tag('exc'), d: seg([L + 4.5 * k, L + 4.5 * k], [L + 13 * k, L + 13 * k]) }, redTail);
     const O = at(0, 0);
-    el('circle', { class: 'tdot dim pop', cx: O[0], cy: O[1], r: 3.1, style: dly(t0 + 0.4) }, g);
+    el('circle', { class: 'tdot dim pop', cx: O[0], cy: O[1], r: 3.1, 'data-g': tag('vtx'), style: dly(t0 + 0.4) }, g);
     return r => {
       red.setAttribute('stroke-dashoffset', (1 - clamp01(r / 0.85)).toFixed(4));
       redTail.setAttribute('opacity', clamp01((r - 0.8) / 0.2).toFixed(3));
@@ -996,35 +1031,36 @@ function blowupFigure() {
       const h = el('g', { 'clip-path': `url(#${id}${side})` }, linkOr(inner, 'excess'));
       el('path', { class: 'paper fade' + (side === 'hi' ? ' fitme' : ''), d: excD, style: dly(d0 + 0.2) }, h);
       el('path', { class: 'exctint fade', d: excD, style: dly(d0 + 0.2) }, h);
-      el('path', { class: 'blob dim draw', d: excD, pathLength: 1, style: dly(d0, 0.9) }, h);
+      el('path', { class: 'blob dim draw', d: excD, pathLength: 1, 'data-g': 'excess', style: dly(d0, 0.9) }, h);
       return inner;
     };
     half('lo', t0 + 0.8);
 
-    const mainG = linkOr(g, 'main');
-    el('path', { class: 'paper fade fitme', d: mainD, style: dly(t0 + 0.3) }, mainG);
-    el('path', { class: 'blobfill fade', d: mainD, style: dly(t0 + 0.3) }, mainG);
-    el('path', { class: 'blob dim draw', d: mainD, pathLength: 1, style: dly(t0, 1.0) }, mainG);
+    const mainG = el('g', {}, g), mainLink = linkOr(mainG, 'main');
+    el('path', { class: 'paper fade fitme', d: mainD, style: dly(t0 + 0.3) }, mainLink);
+    el('path', { class: 'blobfill fade', d: mainD, style: dly(t0 + 0.3) }, mainLink);
+    el('path', { class: 'blob dim draw', d: mainD, pathLength: 1, 'data-g': 'main', style: dly(t0, 1.0) }, mainLink);
     const L = NLOG.L, h = (L + 8) / 2, [cu, cw] = NLOG.mainPic;
-    const rMain = typePic(mainG, (x, y) => flat([cu - h + x, cw - h + y]), L, 'main', t0 + 1.4);
+    const rMain = typePic(linkOr(mainG, 'types', 'trop'), (x, y) => flat([cu - h + x, cw - h + y]), L, 'main', t0 + 1.4);
 
     const up = half('hi', t0 + 0.8);
     const fl = chord(blobPoly(mainS)), ex = chord(blobPoly(excS));        // the line where the sheets meet
-    el('path', { class: 'meet dim draw', d: `M${P(Math.max(fl[0], ex[0]) + 2, 0)}L${P(Math.min(fl[1], ex[1]) - 2, 0)}`,
+    el('path', { class: 'meet dim draw', 'data-g': 'excess', d: `M${P(Math.max(fl[0], ex[0]) + 2, 0)}L${P(Math.min(fl[1], ex[1]) - 2, 0)}`,
                  pathLength: 1, style: dly(t0 + 1.6, 0.5) }, up);
     const Le = NLOG.Lexc, he = (Le + 8) / 2, [eu, ez] = NLOG.excPic;
-    const rExc = typePic(up, (x, y) => upright([eu - he + x, ez - he + y]), Le, 'excess', t0 + 1.7);
+    const rExc = typePic(linkOr(up, 'types', 'trop'), (x, y) => upright([eu - he + x, ez - he + y]), Le, 'excess', t0 + 1.7);
 
     // hidden edges, dashed: the flat sheet behind the upright one, and the upright one below the flat one
-    const gm = el('g', {}, el('g', { class: 'fade', style: dly(t0 + 2.2) }, g)); fading.push(gm);
-    el('path', { class: 'ghost', d: mainD }, gm);
-    const ge = el('g', {}, el('g', { class: 'fade', style: dly(t0 + 2.2) }, g)); sinking.push(ge);
-    el('path', { class: 'ghost', d: excD }, ge);
+    const gm = el('g', { class: 'nohit' }, el('g', { class: 'fade', style: dly(t0 + 2.2) }, g)); fading.push(gm);
+    el('path', { class: 'ghost dim', 'data-g': 'main', d: mainD }, gm);
+    const ge = el('g', { class: 'nohit' }, el('g', { class: 'fade', style: dly(t0 + 2.2) }, g)); sinking.push(ge);
+    el('path', { class: 'ghost dim', 'data-g': 'excess', d: excD }, ge);
 
     const xs = mainS.map(p => p[0]), cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const labs = el('g', {}, g);
+    const labs = linkOr(g, 'main');
     const nl = tl => [['NLog', ''], ['Λ', 'sub'], ...pair(tl)];
-    const l0 = panelName(labs, cx, NLOG.labelY, nl(''), t0 + 2.4), l1 = panelName(labs, cx, NLOG.labelY, nl(' tilde'));
+    const l0 = panelName(labs, cx, NLOG.labelY, nl(''), t0 + 2.4, { g: 'main' }),
+          l1 = panelName(labs, cx, NLOG.labelY, nl(' tilde'), null, { g: 'main' });
     return {
       ray: r => { rMain(r); rExc(r); },
       fade: f => {
@@ -1064,7 +1100,7 @@ function blowupFigure() {
     });
     const pad = 12, w = Lyt.width || (x1 - x0 + 2 * pad), cx = (x0 + x1) / 2;
     svg.setAttribute('viewBox', [cx - w / 2, y0 - pad, w, y1 - y0 + 2 * pad].map(v => v.toFixed(1)).join(' '));
-    svg.querySelectorAll('.fig-link').forEach(a => { addHit(a); wireLink(a); });
+    svg.querySelectorAll('.fig-link').forEach(a => { const t = a.querySelector('text'); if (t) addHit(a, 8, t); wireLink(a); });
   }
   function setState(s, r, f) { STATE.blow(s); STATE.ray(r); STATE.fade(f); }
 

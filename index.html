@@ -13,12 +13,16 @@
     --c1: #c2552d;   /* D₁: its vanishing cycles, nodes, and edges of Γ over it */
     --c2: #1d7c74;   /* D₂ */
     --accent: #b23a1d;
+    --dA: #1d7c74;   /* blowup figure: D₁ and its ray in the cone */
+    --dB: #4b58a8;   /* D₂ and its ray */
+    --exc: #c62f27;  /* the exceptional curve E and the diagonal ray */
     --serif: "STIX Two Text", "Latin Modern Roman", "Cambria", "Georgia", "Times New Roman", serif;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --paper: #151517; --ink: #ebe9e4; --muted: #9a989d; --rule: #34333a;
       --c1: #ec8a62; --c2: #56b8ad; --accent: #f09a75;
+      --dA: #56b8ad; --dB: #9aa3ea; --exc: #f2776a;
     }
   }
   * { box-sizing: border-box; }
@@ -58,7 +62,7 @@
   figcaption .hint { display: none; color: var(--ink); font-size: 1.15rem; }
   figcaption.hinting .hint { display: block; }
   figcaption.hinting .default { display: none; }
-  #replay { font: inherit; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; }
+  .replay { font: inherit; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; }
 
   .textnav { text-align: center; padding: 1.25rem 1rem 0; font-size: .95rem; color: var(--muted); }
   .textnav a { text-decoration: none; margin: 0 .45rem; white-space: nowrap; }
@@ -92,6 +96,25 @@
   .lab .sub { font-size: .68em; }
   .lab.name { fill: var(--muted); font-size: 20px; }
   .lab.comp { fill: var(--muted); font-size: 18px; }
+  /* the blowup figure */
+  .blob     { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+  .blobfill { fill: var(--ink); fill-opacity: .045; stroke: none; }
+  .paper    { fill: var(--paper); stroke: none; }
+  .exctint  { fill: var(--ink); fill-opacity: .065; stroke: none; }
+  .ghost    { fill: none; stroke: var(--ink); stroke-width: 1.1; stroke-dasharray: 2.5 4; opacity: .5; }
+  .meet     { fill: none; stroke: var(--ink); stroke-width: 1.9; stroke-linecap: round; }
+  .dcurve   { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+  .ecurve   { fill: none; stroke: var(--exc); stroke-width: 2.6; stroke-linecap: round; }
+  .dA { stroke: var(--dA); }  .dB { stroke: var(--dB); }
+  .cone     { fill: var(--ink); fill-opacity: .05; stroke: none; }
+  .ax       { fill: none; stroke-width: 1.6; stroke-linecap: round; }
+  .tleg     { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+  .tdash    { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 2 2.2; }
+  .rray     { fill: none; stroke: var(--exc); stroke-width: 2; stroke-linecap: round; }
+  .ttail    { stroke-dasharray: 0 4.2; }
+  .tdot     { fill: var(--ink); }
+  .tilde    { fill: none; stroke: var(--ink); stroke-width: 1.25; stroke-linecap: round; }
+  .tilde.name { stroke: var(--muted); }
 
   .fig-link { cursor: pointer; outline: none; }
   .fig-link .hit { fill: transparent; stroke: none; pointer-events: all; }
@@ -107,8 +130,10 @@
 
   /* ---------- intro animation (only while <svg> has class "intro") ---------- */
   .intro .draw { stroke-dasharray: 1 1; stroke-dashoffset: 1;
-                 animation: draw var(--dur, 1s) cubic-bezier(.55,.05,.3,1) var(--d, 0s) forwards; }
-  @keyframes draw { to { stroke-dashoffset: 0; } }
+                 animation: draw var(--dur, 1s) cubic-bezier(.55,.05,.3,1) var(--d, 0s) both; }
+  /* hidden until it starts; no dash pattern once drawn (dashed strokes render a little lighter) */
+  @keyframes draw { 0% { stroke-opacity: 0; } 0.5% { stroke-opacity: 1; }
+                    99.9% { stroke-dashoffset: 0; stroke-dasharray: 1 1; } 100% { stroke-dashoffset: 0; stroke-dasharray: none; } }
   .intro .fade { opacity: 0; animation: fade .7s ease var(--d, 0s) forwards; }
   @keyframes fade { to { opacity: 1; } }
   .intro .pop  { transform: scale(0); transform-box: fill-box; transform-origin: center;
@@ -161,16 +186,22 @@
 
 <main>
   <figure>
-    <svg id="fig" class="fig" role="group"
-         aria-label="A surface degenerating into three components, carrying a genus-two curve that breaks into three pieces, and the tropicalisation of the picture. The labels are links."></svg>
+    <svg id="fig" class="fig" role="group" aria-label="An animated figure. Its labels are links."></svg>
     <figcaption id="caption">
-      <span class="default">
+      <span class="default" data-fig="degeneration">
         A surface <i>X<sub>t</sub></i> degenerates, as <i>t</i>&nbsp;→&nbsp;0, to
         <i>X</i><sub>0</sub>&nbsp;=&nbsp;<i>Y</i><sub>1</sub>&nbsp;∪&nbsp;<i>Y</i><sub>2</sub>&nbsp;∪&nbsp;<i>Y</i><sub>3</sub>,
         glued along <i>D</i><sub>1</sub> and <i>D</i><sub>2</sub>. The genus-two curve <i>C<sub>t</sub></i>&nbsp;⊂&nbsp;<i>X<sub>t</sub></i>
         breaks with it into three rational pieces, one in each <i>Y<sub>i</sub></i>, meeting in pairs of nodes on the <i>D<sub>j</sub></i>.
         Tropicalising gives a genus-two tropical curve Γ mapping to trop&nbsp;<i>X</i>.
-        <button id="replay" type="button">replay</button>
+        <button class="replay" type="button">replay</button>
+      </span>
+      <span class="default" data-fig="blowup" hidden>
+        The space NLog<sub>Λ</sub>(<i>X</i>|<i>D</i>) has a main component and an excess component,
+        each labelled by its naive tropical type. Blowing up the point where the two components of <i>D</i> meet
+        subdivides the cone by the red ray, and for the blown-up pair the excess component disappears,
+        leaving just the main component.
+        <button class="replay" type="button">replay</button>
       </span>
       <span class="hint" id="hint" aria-hidden="true"></span>
     </figcaption>
@@ -427,77 +458,21 @@ const SLOTS = {
   d1:    { page: 'toric',    sym: 'D₁' },
   d2:    { page: 'contact',  sym: 'D₂' },
 };
+// (The blowup figure has parts that can be linked too: pair (the picture of (X|D)), main and excess
+// (the two components of NLog). None are linked yet.)
 // Set to '_blank' (or '_top') when the figure is embedded in an iframe, e.g. a Google Sites
 // "Embed code" box. That turns off the in-page panels and makes the links plain links.
 const LINK_TARGET = null;
 const SPEED = 1;   // >1 makes the intro faster
+const BLOWUP_ODDS = 1 / 3;   // how often the page opens with the blowup figure instead of the degeneration
 
 /* =====================================================================
-   2. GEOMETRY
-   The surface is a sheet with coordinates (u, v), u across and v into the page.
-   Degenerating folds it along the creases u = ±38 into Y₁, Y₂, Y₃. The curve
-   lies on the sheet: a genus-two outline whose holes sit on the creases. Its
-   four necks (above and below each hole) are multiplied by
-       neck(d) = sqrt((d² + r²) / (d² + σ²)),
-   which is 1 away from the crease and becomes the cone |d|/σ when r = 0: a node.
+   2. DRAWING HELPERS (used by both figures)
    ===================================================================== */
-const G = {
-  W: 114, V: 66, creases: [-38, 38],   // the sheet X_t
-  fold: 34 * Math.PI / 180,            // fold angle of X_0 along D₁, D₂
-  kx: 0.25, ky: 0.78, kz: 0.85,        // oblique projection: depth slants left, height goes up
-  a: 96, b: 46, pow: 0.75,             // the curve: half-length, half-thickness, boxiness
-  w: 20, hh: 12,                       // its holes: half-width, half-height
-  p: 18,                               // the nodes sit at v = ±p on each crease
-  sigma: 16, sigmaH: 8,                // widths of the necks
-  R: 15.4,                             // neck radius on the smooth fibre (just under sigma)
-};
-const neck = (d, r, s) => Math.sqrt((d * d + r * r) / (d * d + s * s));
-const base = u => G.b * Math.pow(Math.max(0, 1 - (u / G.a) ** 2), G.pow / 2);
-function T(u, r) {                     // half-thickness of the curve at u
-  let m = 1;
-  for (const c of G.creases) m *= neck(u - c, r, G.sigma);
-  return G.p + (base(u) - G.p) * m;
-}
-function rim(u, c, r) {                // half-height of the hole centred on crease c
-  const s = (u - c) / G.w, h0 = G.hh * (1 - s * s);
-  return h0 + (G.p - h0) * (1 - neck(u - c, r * G.sigmaH / G.sigma, G.sigmaH));
-}
-// The fold: returns the map (u, v) -> screen point for fold amount s ∈ [0, 1].
-function folder(s) {
-  const al = G.fold * s, ca = Math.cos(al), sa = Math.sin(al);
-  const [c1, c2] = G.creases, mid = (c1 + G.W) / 2;
-  return (u, v) => {
-    const z = (u <= c1 ? u + G.W : u <= c2 ? (c1 + G.W) - (u - c1) : (c1 + G.W) - (c2 - c1) + (u - c2)) - mid;
-    return [u * ca - G.kx * v, G.ky * v - G.kz * z * sa];
-  };
-}
-const US = (() => {                    // sample points along the curve, plus the creases exactly
-  const s = new Set(), N = 160;
-  for (let i = 0; i <= N; i++) s.add(+(-G.a * Math.cos(Math.PI * i / N)).toFixed(3));
-  G.creases.forEach(c => s.add(c));
-  return [...s].sort((p, q) => p - q);
-})();
 const P = (x, y) => x.toFixed(2) + ' ' + y.toFixed(2);
 const poly = (pts, close) => 'M' + pts.map(q => P(...q)).join('L') + (close ? 'Z' : '');
 
-function outlineD(F, r) {
-  const top = US.map(u => F(u, -T(u, r)));
-  const bot = US.slice(1, -1).reverse().map(u => F(u, T(u, r)));
-  return poly(top.concat(bot), true);
-}
-function holeD(F, c, r) {
-  const pts = [];
-  for (let i = 0; i <= 40; i++) { const u = c - G.w + (2 * G.w * i) / 40; pts.push(F(u, -rim(u, c, r))); }
-  for (let i = 39; i >= 1; i--) { const u = c - G.w + (2 * G.w * i) / 40; pts.push(F(u, rim(u, c, r))); }
-  return poly(pts, true);
-}
-const sheetD = F => { const [c1, c2] = G.creases, W = G.W, V = G.V;
-  return poly([[-W, -V], [c1, -V], [c2, -V], [W, -V], [W, V], [c2, V], [c1, V], [-W, V]].map(q => F(...q)), true); };
-const quadD = (F, u0, u1) => poly([[u0, -G.V], [u1, -G.V], [u1, G.V], [u0, G.V]].map(q => F(...q)), true);
-
-/* =====================================================================
-   3. BUILDING THE SVG
-   ===================================================================== */
+const clamp01 = x => Math.max(0, Math.min(1, x));
 const NS = 'http://www.w3.org/2000/svg';
 const svg = document.getElementById('fig');
 function el(tag, attrs = {}, parent) {
@@ -509,7 +484,7 @@ function el(tag, attrs = {}, parent) {
 const T_ = s => (s / SPEED).toFixed(2) + 's';
 const dly = (s, dur) => `--d:${T_(s)}` + (dur ? `;--dur:${T_(dur)}` : '');
 
-// math label: parts = [[text, 'i' | '' | 'sub' | 'sub i'], ...]
+// math label: parts = [[text, kind], ...], kind made of 'i' (italic), 'sub', 'tilde' (a tilde over it)
 function mathText(parent, x, y, parts, { anchor = 'middle', cls = '', style, g } = {}) {
   const t = el('text', { x, y, class: 'lab dim ' + cls, 'text-anchor': anchor, style, 'data-g': g }, parent);
   let low = false;
@@ -518,11 +493,31 @@ function mathText(parent, x, y, parts, { anchor = 'middle', cls = '', style, g }
     const ts = el('tspan', { class: (isSub ? 'sub ' : '') + (kind.includes('i') ? 'i' : '') }, t);
     if (isSub && !low) { ts.setAttribute('dy', 6); low = true; }
     else if (!isSub && low) { ts.setAttribute('dy', -6); low = false; }
+    if (kind.includes('tilde')) ts.dataset.tilde = '1';
     ts.textContent = s;
   }
   return t;
 }
-const sym = (letter, i) => [[letter, 'i'], [String(i), 'sub']];
+// Tildes are drawn as little paths over their letters, once the text has been laid out.
+function placeTildes() {
+  svg.querySelectorAll('.tilde').forEach(n => n.remove());
+  svg.querySelectorAll('text').forEach(t => {
+    let idx = 0;
+    const fs = parseFloat(getComputedStyle(t).fontSize) || 20, base = parseFloat(t.getAttribute('y'));
+    for (const ts of t.querySelectorAll('tspan')) {
+      if (ts.dataset.tilde) {
+        let b; try { b = t.getExtentOfChar(idx); } catch { b = null; }
+        if (b) {
+          const cx = b.x + b.width / 2 + 0.1 * fs, ty = base - 0.85 * fs, w = 0.46 * fs, a = 0.06 * fs;
+          el('path', { class: 'tilde ' + (t.classList.contains('name') ? 'name' : ''),
+                       d: `M${P(cx - w / 2, ty + 0.6 * a)}C${P(cx - w / 4, ty - 1.9 * a)} ${P(cx + w / 4, ty + 1.9 * a)} ${P(cx + w / 2, ty - 0.6 * a)}` },
+             t.parentNode);
+        }
+      }
+      idx += ts.textContent.length;
+    }
+  });
+}
 
 function figLink(parent, slotKey, light) {
   const slot = SLOTS[slotKey], page = PAGES[slot.page];
@@ -532,205 +527,576 @@ function figLink(parent, slotKey, light) {
   else if (page.newTab) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); }
   return a;
 }
+// a link if SLOTS gives this part of the figure a page, otherwise a plain group
 function addHit(a, pad = 9) {
   a.querySelectorAll('.hit').forEach(h => h.remove());
   const b = a.getBBox();
   a.insertBefore(el('rect', { class: 'hit', x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad,
                               height: b.height + 2 * pad, rx: 8 }), a.firstChild);
 }
-
-const MARKS = { x1: [-74, 4], x2: [0, -26], x3: [76, -6] };     // marked points, sheet coordinates
-const CREASE_G = ['d1', 'd2'];
-
-// One copy of the surface with its curve. Returns update(s), s = 0 smooth/flat, 1 nodal/folded.
-function surface(parent, { links, t0 }) {
-  const g = el('g', {}, parent);
-  const dr = links ? ' draw' : '';
-  const fd = (dt) => links ? dly(t0 + dt) : null;
-  const shades = [[-G.W, G.creases[0]], G.creases, [G.creases[1], G.W]].map(([u0, u1], i) =>
-    ({ u0, u1, i, el: el('path', { class: 'shade' + (links ? ' fade' : ''), style: fd(0.2) }, g) }));
-  const sheet = el('path', { class: 'sheet dim' + dr, pathLength: 1, style: links ? dly(t0, 1.0) : null }, g);
-  const cfill = el('path', { class: 'cfill' + (links ? ' fade' : ''), style: fd(0.8) }, g);
-  const creases = G.creases.map((c, i) =>
-    el('path', { class: `crease ${CREASE_G[i]} dim`, 'data-g': CREASE_G[i], 'stroke-opacity': 0 }, g));
-  const outline = el('path', { class: 'ink dim' + dr, pathLength: 1, style: links ? dly(t0 + 0.4, 1.2) : null }, g);
-  const holes = G.creases.map(c => el('path', { class: 'ink thin dim' + dr, pathLength: 1, style: links ? dly(t0 + 0.9, 0.7) : null }, g));
-  const cycles = [];
-  G.creases.forEach((c, i) => {
-    for (const side of [-1, 1]) {
-      const gg = el('g', { class: links ? 'fade' : '', style: fd(1.5) }, g);
-      const gname = `${CREASE_G[i]} cyc`;
-      cycles.push({ c, side,
-        back:  el('path', { class: `cyc back ${CREASE_G[i]} dim`, 'data-g': gname }, gg),
-        front: el('path', { class: `cyc ${CREASE_G[i]} dim`, 'data-g': gname }, gg),
-        node:  el('circle', { class: `node ${CREASE_G[i]} dim`, 'data-g': `${CREASE_G[i]} node`, r: 4, 'fill-opacity': 0 }, gg) });
-    }
-  });
-  // marked points (with labels on the generic fibre)
-  const F0 = folder(0), dots = [];
-  for (const [id, [u, v]] of Object.entries(MARKS)) {
-    if (!links) { dots.push([u, v, el('circle', { class: 'pt dim', r: 3.4, 'data-g': id }, g)]); continue; }
-    const a = figLink(g, id, id);
-    const up = id !== 'x3', [px, py] = F0(u, v), [lx, ly] = F0(u, up ? -84 : 92), [ex, ey] = F0(u, up ? -76 : 80);
-    el('line', { class: 'leader dim fade', x1: ex, y1: ey, x2: px + (up ? 1.2 : -1.2), y2: py + (up ? -4.5 : 4.5), 'data-g': id, style: fd(1.2) }, a);
-    el('circle', { class: 'pt dim pop', cx: px, cy: py, r: 3.4, 'data-g': id, style: fd(1.1) }, a);
-    mathText(a, lx, ly + (up ? 0 : 8), sym('x', id[1]), { cls: 'fade', style: fd(1.2), g: id });
-  }
-  // labels that only the degenerate fibre has
-  let compLabs = [], dLabs = [];
-  if (!links) {
-    compLabs = [1, 2, 3].map(i => mathText(g, 0, 0, sym('Y', i), { cls: 'comp' }));
-    dLabs = G.creases.map((c, i) => {
-      const a = figLink(g, 'd' + (i + 1), CREASE_G[i]);
-      return mathText(a, 0, 0, sym('D', i + 1), { cls: CREASE_G[i], g: CREASE_G[i] });
-    });
-  }
-
-  function update(s) {
-    const F = folder(s), r = G.R * (1 - s);
-    for (const sh of shades) {
-      sh.el.setAttribute('d', quadD(F, sh.u0, sh.u1));
-      sh.el.setAttribute('fill-opacity', (0.045 + (sh.i === 1 ? 0.06 : -0.015) * s).toFixed(3));
-    }
-    sheet.setAttribute('d', sheetD(F));
-    const od = outlineD(F, r), hd = G.creases.map(c => holeD(F, c, r));
-    outline.setAttribute('d', od);
-    holes.forEach((h, i) => h.setAttribute('d', hd[i]));
-    cfill.setAttribute('d', od + hd.join(''));
-    creases.forEach((cr, i) => {
-      const c = G.creases[i];
-      cr.setAttribute('d', `M${P(...F(c, -G.V))}L${P(...F(c, G.V))}`);
-      cr.setAttribute('stroke-opacity', Math.min(1, s * 1.4).toFixed(3));
-    });
-    for (const cy of cycles) {
-      const inner = rim(cy.c, cy.c, r), outer = T(cy.c, r);
-      const vm = cy.side * (inner + outer) / 2, rv = (outer - inner) / 2, ru = 0.34 * rv;
-      if (rv < 0.4) { cy.front.setAttribute('d', ''); cy.back.setAttribute('d', ''); }
-      else {
-        const arc = (t0, t1) => { const pts = [];
-          for (let k = 0; k <= 18; k++) { const th = t0 + (t1 - t0) * k / 18; pts.push(F(cy.c + ru * Math.cos(th), vm + rv * Math.sin(th))); }
-          return poly(pts); };
-        cy.front.setAttribute('d', arc(-Math.PI / 2, Math.PI / 2));
-        cy.back.setAttribute('d', arc(Math.PI / 2, 1.5 * Math.PI));
-      }
-      const [nx, ny] = F(cy.c, cy.side * G.p);
-      cy.node.setAttribute('cx', nx.toFixed(2)); cy.node.setAttribute('cy', ny.toFixed(2));
-      cy.node.setAttribute('fill-opacity', Math.max(0, Math.min(1, (3 - rv) / 2.5)).toFixed(3));
-    }
-    for (const [u, v, d] of dots) { const [x, y] = F(u, v); d.setAttribute('cx', x.toFixed(2)); d.setAttribute('cy', y.toFixed(2)); }
-    const mids = [(-G.W + G.creases[0]) / 2, 0, (G.creases[1] + G.W) / 2];
-    compLabs.forEach((t, i) => { const [x, y] = F(mids[i], G.V); t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y + 26).toFixed(1)); });
-    dLabs.forEach((t, i) => { const [x, y] = F(G.creases[i], -G.V); t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y - 17).toFixed(1)); });
-  }
-  update(links ? 0 : 1);
-  return update;
-}
-
-// The tropical side: Γ (two "bananas", one over each edge of trop X) mapping down to trop X.
-function tropical(parent, t0) {
-  const g = el('g', {}, parent);
-  const xs = [-80, 0, 80], yG = -16, yX = 58, bulge = 22;
-  // trop X: a segment, one vertex per component Y_i, one edge per D_j
-  xs.slice(0, 2).forEach((x, i) =>
-    el('path', { class: `edge ${CREASE_G[i]} dim draw`, d: `M${P(x, yX)}L${P(xs[i + 1], yX)}`, pathLength: 1,
-                 'data-g': `${CREASE_G[i]} tx`, style: dly(t0, 0.5) }, g));
-  // projection lines u_i -> v_i
-  xs.forEach(x => el('line', { class: 'proj dim fade', x1: x, y1: yG + 10, x2: x, y2: yX - 9, 'data-g': 'proj', style: dly(t0 + 1.0) }, g));
-  // Γ: two edges over each edge of trop X
-  xs.slice(0, 2).forEach((x, i) => {
-    for (const sgn of [-1, 1]) {
-      const x1 = xs[i + 1], mx = (x + x1) / 2;
-      el('path', { class: `edge ${CREASE_G[i]} dim draw`, pathLength: 1, 'data-g': `${CREASE_G[i]} edge`,
-                   d: `M${P(x, yG)}Q${P(mx, yG + sgn * 2 * bulge)} ${P(x1, yG)}`, style: dly(t0 + 0.25, 0.8) }, g);
-    }
-  });
-  xs.forEach(x => el('circle', { class: 'tvtx dim pop', cx: x, cy: yX, r: 4, 'data-g': 'tx', style: dly(t0 + 0.3) }, g));
-  // legs for the marked points, one on each vertex of Γ
-  const legs = { x1: [xs[0], [-0.8, -0.6]], x2: [xs[1], [0, -1]], x3: [xs[2], [0.8, -0.6]] };
-  for (const [id, [x, d]] of Object.entries(legs)) {
-    const at = s => [x + s * d[0], yG + s * d[1]];
-    const a = figLink(g, id, id);
-    el('path', { class: 'leg dim draw', d: `M${P(...at(0))}L${P(...at(30))}`, pathLength: 1, 'data-g': id, style: dly(t0 + 0.8, 0.4) }, a);
-    el('path', { class: 'legtail dim fade', d: `M${P(...at(36))}L${P(...at(46))}`, 'data-g': id, style: dly(t0 + 1.0) }, a);
-    const [lx, ly] = at(d[1] === -1 ? 64 : 62);
-    mathText(a, lx, ly + 7, sym('x', id[1]), { cls: 'fade', style: dly(t0 + 1.05), g: id });
-  }
-  xs.forEach((x, i) => el('circle', { class: 'vtx dim pop', cx: x, cy: yG, r: 4.6, 'data-g': 'x' + (i + 1), style: dly(t0 + 0.6) }, g));
-}
-
-function arrow(parent, [x0, y0], [x1, y1], slot, labelParts, labelAt, anchor, t0, light) {
-  const a = figLink(parent, slot, light);
-  const len = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / len, uy = (y1 - y0) / len;
-  const h = (s, n) => P(x1 - 10 * ux + s * n * -uy, y1 - 10 * uy + s * n * ux);
-  // a squiggly shaft: a sine wave along the arrow, damped to zero at both ends
-  const run = len - 4, waves = Math.max(2, Math.round(run / 13)), A = 3.4, pts = [];
-  for (let k = 0; k <= waves * 12; k++) {
-    const t = k / (waves * 12), d = t * run;
-    const env = Math.min(1, t / 0.12, (1 - t) / 0.12);
-    const off = A * env * Math.sin(2 * Math.PI * waves * t);
-    pts.push(P(x0 + d * ux - off * uy, y0 + d * uy + off * ux));
-  }
-  el('path', { class: 'arrow dim draw', pathLength: 1, 'data-g': slot,
-               d: `M${pts.join('L')}L${P(x1, y1)}M${h(1, 6)}L${P(x1, y1)}L${h(-1, 6)}`, style: dly(t0, 0.6) }, a);
-  mathText(a, labelAt[0], labelAt[1], labelParts, { anchor, cls: 'fade', style: dly(t0 + 0.3), g: slot });
-}
-
-const LAYOUTS = {
-  wide: { viewBox: '8 68 992 230', A: [146, 172], B: [506, 172], C: [858, 172], name: 106,
-          arrows: [[[286, 172], [362, 172]], [[648, 172], [722, 172]]], lab: m => [m[0], m[1] - 14], anchor: 'middle' },
-  tall: { viewBox: '6 70 292 830', A: [150, 165], B: [150, 445], C: [150, 730], name: 106,
-          arrows: [[[150, 284], [150, 340]], [[150, 564], [150, 620]]], lab: m => [m[0] + 16, m[1] + 7], anchor: 'start' },
-};
-
-let morphB = null;
-function build(name) {
-  const Lyt = LAYOUTS[name];
-  svg.replaceChildren();
-  svg.setAttribute('viewBox', Lyt.viewBox);
-  const at = ([x, y]) => el('g', { transform: `translate(${x} ${y})` }, svg);
-  const names = (g, parts, d) => mathText(g, 0, Lyt.name, parts, { cls: 'name fade', style: dly(d) });
-
-  const gA = at(Lyt.A);
-  surface(gA, { links: true, t0: 0 });
-  names(gA, [['C', 'i'], ['t', 'sub i'], [' ⊂ ', ''], ['X', 'i'], ['t', 'sub i']], 1.2);
-
-  const gB = at(Lyt.B);
-  const gBin = el('g', { class: 'fade', style: dly(1.9) }, gB);
-  morphB = surface(gBin, { links: false, t0: 0 });
-  names(gB, [['C', 'i'], ['0', 'sub'], [' ⊂ ', ''], ['X', 'i'], ['0', 'sub']], 2.0);
-
-  const gC = at(Lyt.C);
-  tropical(gC, 4.2);
-  names(gC, [['Γ → trop ', ''], ['X', 'i']], 5.2);
-
-  const [a1, a2] = Lyt.arrows;
-  const mid = ([p, q]) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
-  arrow(svg, ...a1, 'degen', [['t', 'i'], [' → 0', '']], Lyt.lab(mid(a1)), Lyt.anchor, 1.6, 'degen cyc');
-  arrow(svg, ...a2, 'trop', [['trop', '']], Lyt.lab(mid(a2)), Lyt.anchor, 3.9, 'trop node edge proj');
-
-  svg.querySelectorAll('.fig-link').forEach(a => { addHit(a); wireLink(a); });
-}
-
-/* =====================================================================
-   4. INTRO: CSS draws/fades the static strokes; JS drives the degeneration.
-   ===================================================================== */
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let raf = 0, introTimer = 0;
 const ease = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
 
-function playIntro() {
-  cancelAnimationFrame(raf); clearTimeout(introTimer);
-  if (reduceMotion()) { svg.classList.remove('intro'); morphB(1); return; }
-  svg.classList.remove('intro'); void svg.getBoundingClientRect(); svg.classList.add('intro');
-  morphB(0);
-  const start = performance.now() + 2300 / SPEED, dur = 1800 / SPEED;
-  const step = now => {
-    const p = Math.max(0, Math.min(1, (now - start) / dur));
-    morphB(ease(p));
-    if (p < 1) raf = requestAnimationFrame(step);
+/* =====================================================================
+   3. FIGURE A: a surface degenerating, with a genus-two curve on it, and its tropicalisation
+   ===================================================================== */
+function degenerationFigure() {
+  /* ---------------------------------------------------------------------
+     Geometry
+     The surface is a sheet with coordinates (u, v), u across and v into the page.
+     Degenerating folds it along the creases u = ±38 into Y₁, Y₂, Y₃. The curve
+     lies on the sheet: a genus-two outline whose holes sit on the creases. Its
+     four necks (above and below each hole) are multiplied by
+         neck(d) = sqrt((d² + r²) / (d² + σ²)),
+     which is 1 away from the crease and becomes the cone |d|/σ when r = 0: a node.
+     --------------------------------------------------------------------- */
+  const G = {
+    W: 114, V: 66, creases: [-38, 38],   // the sheet X_t
+    fold: 34 * Math.PI / 180,            // fold angle of X_0 along D₁, D₂
+    kx: 0.25, ky: 0.78, kz: 0.85,        // oblique projection: depth slants left, height goes up
+    a: 96, b: 46, pow: 0.75,             // the curve: half-length, half-thickness, boxiness
+    w: 20, hh: 12,                       // its holes: half-width, half-height
+    p: 18,                               // the nodes sit at v = ±p on each crease
+    sigma: 16, sigmaH: 8,                // widths of the necks
+    R: 15.4,                             // neck radius on the smooth fibre (just under sigma)
   };
-  raf = requestAnimationFrame(step);
-  introTimer = setTimeout(() => svg.classList.remove('intro'), 6000 / SPEED);
+  const neck = (d, r, s) => Math.sqrt((d * d + r * r) / (d * d + s * s));
+  const base = u => G.b * Math.pow(Math.max(0, 1 - (u / G.a) ** 2), G.pow / 2);
+  function T(u, r) {                     // half-thickness of the curve at u
+    let m = 1;
+    for (const c of G.creases) m *= neck(u - c, r, G.sigma);
+    return G.p + (base(u) - G.p) * m;
+  }
+  function rim(u, c, r) {                // half-height of the hole centred on crease c
+    const s = (u - c) / G.w, h0 = G.hh * (1 - s * s);
+    return h0 + (G.p - h0) * (1 - neck(u - c, r * G.sigmaH / G.sigma, G.sigmaH));
+  }
+  // The fold: returns the map (u, v) -> screen point for fold amount s ∈ [0, 1].
+  function folder(s) {
+    const al = G.fold * s, ca = Math.cos(al), sa = Math.sin(al);
+    const [c1, c2] = G.creases, mid = (c1 + G.W) / 2;
+    return (u, v) => {
+      const z = (u <= c1 ? u + G.W : u <= c2 ? (c1 + G.W) - (u - c1) : (c1 + G.W) - (c2 - c1) + (u - c2)) - mid;
+      return [u * ca - G.kx * v, G.ky * v - G.kz * z * sa];
+    };
+  }
+  const US = (() => {                    // sample points along the curve, plus the creases exactly
+    const s = new Set(), N = 160;
+    for (let i = 0; i <= N; i++) s.add(+(-G.a * Math.cos(Math.PI * i / N)).toFixed(3));
+    G.creases.forEach(c => s.add(c));
+    return [...s].sort((p, q) => p - q);
+  })();
+
+  function outlineD(F, r) {
+    const top = US.map(u => F(u, -T(u, r)));
+    const bot = US.slice(1, -1).reverse().map(u => F(u, T(u, r)));
+    return poly(top.concat(bot), true);
+  }
+  function holeD(F, c, r) {
+    const pts = [];
+    for (let i = 0; i <= 40; i++) { const u = c - G.w + (2 * G.w * i) / 40; pts.push(F(u, -rim(u, c, r))); }
+    for (let i = 39; i >= 1; i--) { const u = c - G.w + (2 * G.w * i) / 40; pts.push(F(u, rim(u, c, r))); }
+    return poly(pts, true);
+  }
+  const sheetD = F => { const [c1, c2] = G.creases, W = G.W, V = G.V;
+    return poly([[-W, -V], [c1, -V], [c2, -V], [W, -V], [W, V], [c2, V], [c1, V], [-W, V]].map(q => F(...q)), true); };
+  const quadD = (F, u0, u1) => poly([[u0, -G.V], [u1, -G.V], [u1, G.V], [u0, G.V]].map(q => F(...q)), true);
+
+  /* ---------------------------------------------------------------------
+     Building the SVG
+     --------------------------------------------------------------------- */
+  const sym = (letter, i) => [[letter, 'i'], [String(i), 'sub']];
+
+  const MARKS = { x1: [-74, 4], x2: [0, -26], x3: [76, -6] };     // marked points, sheet coordinates
+  const CREASE_G = ['d1', 'd2'];
+
+  // One copy of the surface with its curve. Returns update(s), s = 0 smooth/flat, 1 nodal/folded.
+  function surface(parent, { links, t0 }) {
+    const g = el('g', {}, parent);
+    const dr = links ? ' draw' : '';
+    const fd = (dt) => links ? dly(t0 + dt) : null;
+    const shades = [[-G.W, G.creases[0]], G.creases, [G.creases[1], G.W]].map(([u0, u1], i) =>
+      ({ u0, u1, i, el: el('path', { class: 'shade' + (links ? ' fade' : ''), style: fd(0.2) }, g) }));
+    const sheet = el('path', { class: 'sheet dim' + dr, pathLength: 1, style: links ? dly(t0, 1.0) : null }, g);
+    const cfill = el('path', { class: 'cfill' + (links ? ' fade' : ''), style: fd(0.8) }, g);
+    const creases = G.creases.map((c, i) =>
+      el('path', { class: `crease ${CREASE_G[i]} dim`, 'data-g': CREASE_G[i], 'stroke-opacity': 0 }, g));
+    const outline = el('path', { class: 'ink dim' + dr, pathLength: 1, style: links ? dly(t0 + 0.4, 1.2) : null }, g);
+    const holes = G.creases.map(c => el('path', { class: 'ink thin dim' + dr, pathLength: 1, style: links ? dly(t0 + 0.9, 0.7) : null }, g));
+    const cycles = [];
+    G.creases.forEach((c, i) => {
+      for (const side of [-1, 1]) {
+        const gg = el('g', { class: links ? 'fade' : '', style: fd(1.5) }, g);
+        const gname = `${CREASE_G[i]} cyc`;
+        cycles.push({ c, side,
+          back:  el('path', { class: `cyc back ${CREASE_G[i]} dim`, 'data-g': gname }, gg),
+          front: el('path', { class: `cyc ${CREASE_G[i]} dim`, 'data-g': gname }, gg),
+          node:  el('circle', { class: `node ${CREASE_G[i]} dim`, 'data-g': `${CREASE_G[i]} node`, r: 4, 'fill-opacity': 0 }, gg) });
+      }
+    });
+    // marked points (with labels on the generic fibre)
+    const F0 = folder(0), dots = [];
+    for (const [id, [u, v]] of Object.entries(MARKS)) {
+      if (!links) { dots.push([u, v, el('circle', { class: 'pt dim', r: 3.4, 'data-g': id }, g)]); continue; }
+      const a = figLink(g, id, id);
+      const up = id !== 'x3', [px, py] = F0(u, v), [lx, ly] = F0(u, up ? -84 : 92), [ex, ey] = F0(u, up ? -76 : 80);
+      el('line', { class: 'leader dim fade', x1: ex, y1: ey, x2: px + (up ? 1.2 : -1.2), y2: py + (up ? -4.5 : 4.5), 'data-g': id, style: fd(1.2) }, a);
+      el('circle', { class: 'pt dim pop', cx: px, cy: py, r: 3.4, 'data-g': id, style: fd(1.1) }, a);
+      mathText(a, lx, ly + (up ? 0 : 8), sym('x', id[1]), { cls: 'fade', style: fd(1.2), g: id });
+    }
+    // labels that only the degenerate fibre has
+    let compLabs = [], dLabs = [];
+    if (!links) {
+      compLabs = [1, 2, 3].map(i => mathText(g, 0, 0, sym('Y', i), { cls: 'comp' }));
+      dLabs = G.creases.map((c, i) => {
+        const a = figLink(g, 'd' + (i + 1), CREASE_G[i]);
+        return mathText(a, 0, 0, sym('D', i + 1), { cls: CREASE_G[i], g: CREASE_G[i] });
+      });
+    }
+
+    function update(s) {
+      const F = folder(s), r = G.R * (1 - s);
+      for (const sh of shades) {
+        sh.el.setAttribute('d', quadD(F, sh.u0, sh.u1));
+        sh.el.setAttribute('fill-opacity', (0.045 + (sh.i === 1 ? 0.06 : -0.015) * s).toFixed(3));
+      }
+      sheet.setAttribute('d', sheetD(F));
+      const od = outlineD(F, r), hd = G.creases.map(c => holeD(F, c, r));
+      outline.setAttribute('d', od);
+      holes.forEach((h, i) => h.setAttribute('d', hd[i]));
+      cfill.setAttribute('d', od + hd.join(''));
+      creases.forEach((cr, i) => {
+        const c = G.creases[i];
+        cr.setAttribute('d', `M${P(...F(c, -G.V))}L${P(...F(c, G.V))}`);
+        cr.setAttribute('stroke-opacity', Math.min(1, s * 1.4).toFixed(3));
+      });
+      for (const cy of cycles) {
+        const inner = rim(cy.c, cy.c, r), outer = T(cy.c, r);
+        const vm = cy.side * (inner + outer) / 2, rv = (outer - inner) / 2, ru = 0.34 * rv;
+        if (rv < 0.4) { cy.front.setAttribute('d', ''); cy.back.setAttribute('d', ''); }
+        else {
+          const arc = (t0, t1) => { const pts = [];
+            for (let k = 0; k <= 18; k++) { const th = t0 + (t1 - t0) * k / 18; pts.push(F(cy.c + ru * Math.cos(th), vm + rv * Math.sin(th))); }
+            return poly(pts); };
+          cy.front.setAttribute('d', arc(-Math.PI / 2, Math.PI / 2));
+          cy.back.setAttribute('d', arc(Math.PI / 2, 1.5 * Math.PI));
+        }
+        const [nx, ny] = F(cy.c, cy.side * G.p);
+        cy.node.setAttribute('cx', nx.toFixed(2)); cy.node.setAttribute('cy', ny.toFixed(2));
+        cy.node.setAttribute('fill-opacity', Math.max(0, Math.min(1, (3 - rv) / 2.5)).toFixed(3));
+      }
+      for (const [u, v, d] of dots) { const [x, y] = F(u, v); d.setAttribute('cx', x.toFixed(2)); d.setAttribute('cy', y.toFixed(2)); }
+      const mids = [(-G.W + G.creases[0]) / 2, 0, (G.creases[1] + G.W) / 2];
+      compLabs.forEach((t, i) => { const [x, y] = F(mids[i], G.V); t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y + 26).toFixed(1)); });
+      dLabs.forEach((t, i) => { const [x, y] = F(G.creases[i], -G.V); t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y - 17).toFixed(1)); });
+    }
+    update(links ? 0 : 1);
+    return update;
+  }
+
+  // The tropical side: Γ (two "bananas", one over each edge of trop X) mapping down to trop X.
+  function tropical(parent, t0) {
+    const g = el('g', {}, parent);
+    const xs = [-80, 0, 80], yG = -16, yX = 58, bulge = 22;
+    // trop X: a segment, one vertex per component Y_i, one edge per D_j
+    xs.slice(0, 2).forEach((x, i) =>
+      el('path', { class: `edge ${CREASE_G[i]} dim draw`, d: `M${P(x, yX)}L${P(xs[i + 1], yX)}`, pathLength: 1,
+                   'data-g': `${CREASE_G[i]} tx`, style: dly(t0, 0.5) }, g));
+    // projection lines u_i -> v_i
+    xs.forEach(x => el('line', { class: 'proj dim fade', x1: x, y1: yG + 10, x2: x, y2: yX - 9, 'data-g': 'proj', style: dly(t0 + 1.0) }, g));
+    // Γ: two edges over each edge of trop X
+    xs.slice(0, 2).forEach((x, i) => {
+      for (const sgn of [-1, 1]) {
+        const x1 = xs[i + 1], mx = (x + x1) / 2;
+        el('path', { class: `edge ${CREASE_G[i]} dim draw`, pathLength: 1, 'data-g': `${CREASE_G[i]} edge`,
+                     d: `M${P(x, yG)}Q${P(mx, yG + sgn * 2 * bulge)} ${P(x1, yG)}`, style: dly(t0 + 0.25, 0.8) }, g);
+      }
+    });
+    xs.forEach(x => el('circle', { class: 'tvtx dim pop', cx: x, cy: yX, r: 4, 'data-g': 'tx', style: dly(t0 + 0.3) }, g));
+    // legs for the marked points, one on each vertex of Γ
+    const legs = { x1: [xs[0], [-0.8, -0.6]], x2: [xs[1], [0, -1]], x3: [xs[2], [0.8, -0.6]] };
+    for (const [id, [x, d]] of Object.entries(legs)) {
+      const at = s => [x + s * d[0], yG + s * d[1]];
+      const a = figLink(g, id, id);
+      el('path', { class: 'leg dim draw', d: `M${P(...at(0))}L${P(...at(30))}`, pathLength: 1, 'data-g': id, style: dly(t0 + 0.8, 0.4) }, a);
+      el('path', { class: 'legtail dim fade', d: `M${P(...at(36))}L${P(...at(46))}`, 'data-g': id, style: dly(t0 + 1.0) }, a);
+      const [lx, ly] = at(d[1] === -1 ? 64 : 62);
+      mathText(a, lx, ly + 7, sym('x', id[1]), { cls: 'fade', style: dly(t0 + 1.05), g: id });
+    }
+    xs.forEach((x, i) => el('circle', { class: 'vtx dim pop', cx: x, cy: yG, r: 4.6, 'data-g': 'x' + (i + 1), style: dly(t0 + 0.6) }, g));
+  }
+
+  function arrow(parent, [x0, y0], [x1, y1], slot, labelParts, labelAt, anchor, t0, light) {
+    const a = figLink(parent, slot, light);
+    const len = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+    const h = (s, n) => P(x1 - 10 * ux + s * n * -uy, y1 - 10 * uy + s * n * ux);
+    // a squiggly shaft: a sine wave along the arrow, damped to zero at both ends
+    const run = len - 4, waves = Math.max(2, Math.round(run / 13)), A = 3.4, pts = [];
+    for (let k = 0; k <= waves * 12; k++) {
+      const t = k / (waves * 12), d = t * run;
+      const env = Math.min(1, t / 0.12, (1 - t) / 0.12);
+      const off = A * env * Math.sin(2 * Math.PI * waves * t);
+      pts.push(P(x0 + d * ux - off * uy, y0 + d * uy + off * ux));
+    }
+    el('path', { class: 'arrow dim draw', pathLength: 1, 'data-g': slot,
+                 d: `M${pts.join('L')}L${P(x1, y1)}M${h(1, 6)}L${P(x1, y1)}L${h(-1, 6)}`, style: dly(t0, 0.6) }, a);
+    mathText(a, labelAt[0], labelAt[1], labelParts, { anchor, cls: 'fade', style: dly(t0 + 0.3), g: slot });
+  }
+
+  const LAYOUTS = {
+    wide: { viewBox: '8 68 992 230', A: [146, 172], B: [506, 172], C: [858, 172], name: 106,
+            arrows: [[[286, 172], [362, 172]], [[648, 172], [722, 172]]], lab: m => [m[0], m[1] - 14], anchor: 'middle' },
+    tall: { viewBox: '6 70 292 830', A: [150, 165], B: [150, 445], C: [150, 730], name: 106,
+            arrows: [[[150, 284], [150, 340]], [[150, 564], [150, 620]]], lab: m => [m[0] + 16, m[1] + 7], anchor: 'start' },
+  };
+
+  let morphB = null;
+  function build(name) {
+    const Lyt = LAYOUTS[name];
+    svg.replaceChildren();
+    svg.setAttribute('viewBox', Lyt.viewBox);
+    const at = ([x, y]) => el('g', { transform: `translate(${x} ${y})` }, svg);
+    const names = (g, parts, d) => mathText(g, 0, Lyt.name, parts, { cls: 'name fade', style: dly(d) });
+
+    const gA = at(Lyt.A);
+    surface(gA, { links: true, t0: 0 });
+    names(gA, [['C', 'i'], ['t', 'sub i'], [' ⊂ ', ''], ['X', 'i'], ['t', 'sub i']], 1.2);
+
+    const gB = at(Lyt.B);
+    const gBin = el('g', { class: 'fade', style: dly(1.9) }, gB);
+    morphB = surface(gBin, { links: false, t0: 0 });
+    names(gB, [['C', 'i'], ['0', 'sub'], [' ⊂ ', ''], ['X', 'i'], ['0', 'sub']], 2.0);
+
+    const gC = at(Lyt.C);
+    tropical(gC, 4.2);
+    names(gC, [['Γ → trop ', ''], ['X', 'i']], 5.2);
+
+    const [a1, a2] = Lyt.arrows;
+    const mid = ([p, q]) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    arrow(svg, ...a1, 'degen', [['t', 'i'], [' → 0', '']], Lyt.lab(mid(a1)), Lyt.anchor, 1.6, 'degen cyc');
+    arrow(svg, ...a2, 'trop', [['trop', '']], Lyt.lab(mid(a2)), Lyt.anchor, 3.9, 'trop node edge proj');
+
+    svg.querySelectorAll('.fig-link').forEach(a => { addHit(a); wireLink(a); });
+  }
+
+  /* ---------------------------------------------------------------------
+     Intro: CSS draws/fades the static strokes; JS drives the degeneration.
+     --------------------------------------------------------------------- */
+
+  function playIntro() {
+    cancelAnimationFrame(raf); clearTimeout(introTimer);
+    if (reduceMotion()) { svg.classList.remove('intro'); morphB(1); return; }
+    svg.classList.remove('intro'); void svg.getBoundingClientRect(); svg.classList.add('intro');
+    morphB(0);
+    const start = performance.now() + 2300 / SPEED, dur = 1800 / SPEED;
+    const step = now => {
+      const p = Math.max(0, Math.min(1, (now - start) / dur));
+      morphB(ease(p));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    introTimer = setTimeout(() => svg.classList.remove('intro'), 6000 / SPEED);
+  }
+
+  return {
+    label: 'A surface degenerating into three components, carrying a genus-two curve that breaks into three pieces, '
+         + 'and the tropicalisation of the picture. The labels are links.',
+    build, play: playIntro, finish: () => morphB(1),
+  };
+}
+
+/* =====================================================================
+   4. FIGURE B: blowing up the corner of (X|D) removes an excess component of NLog_Λ(X|D)
+   ===================================================================== */
+function blowupFigure() {
+  /* ---------------------------------------------------------------------
+     Geometry  (coordinates are local to each panel; y points down)
+     Left panel, the pair (X|D): D = D₁ + D₂ meet at the vertex p. Blowing up p
+     (parameter s: 0 → 1) cuts the corner: the exceptional curve E grows out of p
+     and D₁, D₂ retract so that each meets E instead of the other.
+     Right panel, NLog_Λ(X|D): a main component and an excess component, each
+     labelled by its naive tropical type in the cone R²≥0. The blowup subdivides
+     the cone by the red diagonal ray (r: 0 → 1), then the excess component
+     fades away (f: 0 → 1), leaving NLog_Λ(X̃|D̃).
+     --------------------------------------------------------------------- */
+  const add = (a, b, t = 1) => [a[0] + t * b[0], a[1] + t * b[1]];
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const unit = ([x, y]) => { const n = Math.hypot(x, y); return [x / n, y / n]; };
+
+  // a closed blob through the points pts (Catmull–Rom spline written as cubic Béziers)
+  function blobD(pts) {
+    const n = pts.length, q = i => pts[(i + n) % n];
+    let d = 'M' + P(...pts[0]);
+    for (let i = 0; i < n; i++) {
+      const p0 = q(i - 1), p1 = q(i), p2 = q(i + 1), p3 = q(i + 2);
+      d += 'C' + P(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6) + ' '
+               + P(p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6) + ' ' + P(...p2);
+    }
+    return d + 'Z';
+  }
+  const PAIR = {
+    blob: [[-114, -6], [-96, -56], [-36, -80], [40, -74], [100, -46], [120, 6], [96, 56], [28, 76], [-50, 72], [-102, 42]],
+    p: [-46, 32],                                   // the vertex D₁ ∩ D₂
+    D: [{ dir: unit([1, -0.04]), len: 168, bow: -10, g: 'dA' },     // D₁, running right
+        { dir: unit([0.12, -1]), len: 112, bow: 9, g: 'dB' }],      // D₂, running up
+    tail: 15,                                       // how far each D_i runs past the vertex
+    cut: 32,                                        // the blowup cuts the corner this far along each D_i
+    eTail: 11, eBow: 4,                             // E: overhang past D̃₁, D̃₂, and its bulge towards p
+  };
+  function gam(i, tau) {                            // D_i(τ) = p + τ·len·dir + τ²·bow·normal
+    const D = PAIR.D[i], nrm = [-D.dir[1], D.dir[0]];
+    return add(add(PAIR.p, D.dir, tau * D.len), nrm, tau * tau * D.bow);
+  }
+  const q1 = gam(0, PAIR.cut / PAIR.D[0].len), q2 = gam(1, PAIR.cut / PAIR.D[1].len);
+  function Ecurve(sig) {                            // E(0) = q₁, E(1) = q₂, bulging slightly towards p
+    const m = [(q1[0] + q2[0]) / 2, (q1[1] + q2[1]) / 2], u = unit([PAIR.p[0] - m[0], PAIR.p[1] - m[1]]);
+    return add(add(q1, [q2[0] - q1[0], q2[1] - q1[1]], sig), u, 4 * sig * (1 - sig) * PAIR.eBow);
+  }
+  const curve = (f, t0, t1, n = 36) => { const pts = []; for (let k = 0; k <= n; k++) pts.push(f(t0 + (t1 - t0) * k / n)); return poly(pts); };
+
+  // NLog is drawn as two pieces of paper meeting along a line: the main component lies flat
+  // (coordinates (u, w), w going back into the page) and the excess component stands upright in the
+  // plane w = 0 (coordinates (u, z), seen face on), passing through the main one.
+  const NLOG = {
+    kx: 0.45, ky: 0.55,                             // oblique projection of the flat sheet: depth goes up and right
+    main: [[-150, 0], [-136, -48], [-80, -70], [0, -70], [80, -60], [128, -22], [132, 30], [92, 66], [10, 76], [-80, 72], [-138, 42]],
+    excess: [[-6, 40], [0, 98], [32, 130], [80, 132], [104, 100], [108, 40], [98, -8], [56, -20], [10, -15]],
+    mainPic: [-82, -4],                             // centre of the main type, in (u, w)
+    excPic: [52, 84],                               // centre of the excess type, in (u, z)
+    L: 56, Lexc: 58,                                // lengths of the cone's rays in the two pictures
+    labelY: 76,
+  };
+  const flat = ([u, w]) => [u + NLOG.kx * w, -NLOG.ky * w];   // a point of the main sheet on screen
+  const upright = ([u, z]) => [u, -z];                         // a point of the excess sheet on screen
+  // directions in a type picture are given with y pointing up
+  const TYPE = {
+    legs: [[Math.cos(0.244), Math.sin(0.244)], [Math.cos(1.326), Math.sin(1.326)]],   // the two rays leaving the origin (excess type), at 14° and 76°
+    inner: [0.531, 0.788],                          // the interior vertex, in units of L
+    dash: 0.22,                                      // length of its two dashed rays, in units of L
+  };
+
+  // the closed spline of blobD, sampled as a polygon
+  function blobPoly(pts, m = 12) {
+    const n = pts.length, q = i => pts[(i + n) % n], out = [];
+    for (let i = 0; i < n; i++) {
+      const p0 = q(i - 1), p1 = q(i), p2 = q(i + 1), p3 = q(i + 2);
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      for (let k = 0; k < m; k++) {
+        const t = k / m, r = 1 - t;
+        out.push([0, 1].map(j => r * r * r * p1[j] + 3 * r * r * t * c1[j] + 3 * r * t * t * c2[j] + t * t * t * p2[j]));
+      }
+    }
+    return out;
+  }
+  // the x-range in which a closed polygon meets the horizontal line at height y
+  function chord(pg, y = 0) {
+    let lo = Infinity, hi = -Infinity;
+    pg.forEach((a, i) => {
+      const b = pg[(i + 1) % pg.length];
+      if ((a[1] - y) * (b[1] - y) <= 0 && a[1] !== b[1]) {
+        const x = a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]);
+        lo = Math.min(lo, x); hi = Math.max(hi, x);
+      }
+    });
+    return [lo, hi];
+  }
+
+  /* ---------------------------------------------------------------------
+     Building the SVG
+     --------------------------------------------------------------------- */
+  const linkOr = (parent, key) => SLOTS[key] ? figLink(parent, key, key) : el('g', {}, parent);
+  // the label under a panel: an outer group fades in with the intro, an inner one is faded by script
+  function panelName(parent, x, y, parts, d) {
+    const outer = el('g', { class: d == null ? '' : 'fade', style: d == null ? null : dly(d) }, parent);
+    const inner = el('g', {}, outer);
+    mathText(inner, x, y, parts, { cls: 'name' });
+    return inner;
+  }
+  const pair = tl => [['(', ''], ['X', 'i' + tl], ['|', ''], ['D', 'i' + tl], [')', '']];
+
+  // ---- left panel: (X|D), and its blowup ----
+  let clipN = 0;
+  function pairPanel(g, t0) {
+    const id = 'blobclip' + (clipN++);
+    el('path', { d: blobD(PAIR.blob) }, el('clipPath', { id }, g));
+    const body = linkOr(g, 'pair');
+    el('path', { class: 'blobfill fade fitme', d: blobD(PAIR.blob), style: dly(t0 + 0.3) }, body);
+    const inside = el('g', { 'clip-path': `url(#${id})` }, body);
+    const Ds = PAIR.D.map((D, i) => el('path', { class: `dcurve ${D.g} dim draw`, pathLength: 1, 'data-g': D.g,
+                                                style: dly(t0 + 0.7 + 0.15 * i, 0.6) }, inside));
+    const E = el('path', { class: 'ecurve dim', 'data-g': 'exc' }, inside);
+    el('path', { class: 'blob dim draw', d: blobD(PAIR.blob), pathLength: 1, style: dly(t0, 1.0) }, body);
+    const vtx = el('circle', { class: 'pt dim pop', cx: PAIR.p[0], cy: PAIR.p[1], r: 3.6, style: dly(t0 + 1.35) }, body);
+    const corners = [q1, q2].map(q => el('circle', { class: 'pt dim', cx: q[0], cy: q[1], r: 0 }, body));
+    const labs = el('g', {}, g);
+    const l0 = panelName(labs, 0, 116, pair(''), t0 + 1.4), l1 = panelName(labs, 0, 116, pair(' tilde'));
+    const eLen = Math.hypot(q2[0] - q1[0], q2[1] - q1[1]), et = PAIR.eTail / eLen;
+
+    return s => {
+      PAIR.D.forEach((D, i) => {
+        const t0_ = lerp(-PAIR.tail, PAIR.cut - PAIR.eTail, s) / D.len;
+        Ds[i].setAttribute('d', curve(tau => gam(i, tau), t0_, 1.12));
+      });
+      if (s < 0.004) E.setAttribute('d', '');
+      else E.setAttribute('d', curve(sig => add(PAIR.p, add(Ecurve(sig), PAIR.p, -1), s), -et, 1 + et, 24));
+      vtx.setAttribute('r', (3.6 * (1 - clamp01(s / 0.35))).toFixed(2));
+      corners.forEach(c => c.setAttribute('r', (3.2 * clamp01((s - 0.78) / 0.22)).toFixed(2)));
+      const k = clamp01((s - 0.3) / 0.55);
+      l0.setAttribute('opacity', (1 - k).toFixed(3)); l1.setAttribute('opacity', k.toFixed(3));
+    };
+  }
+
+  // ---- a naive tropical type in the cone R²≥0; at(x, y) puts a point of the picture (y up) on screen ----
+  function typePic(parent, at, L, kind, t0) {
+    const g = el('g', { class: 'tpic' }, parent);
+    const seg = (p, q) => `M${P(...at(...p))}L${P(...at(...q))}`;
+    const sc = (d, t) => [d[0] * t, d[1] * t];
+    el('path', { class: 'cone fade', d: poly([at(0, 0), at(L, 0), at(L, L), at(0, L)], true), style: dly(t0) }, g);
+    const ray = (cls, d, len, t, gname) => {
+      el('path', { class: `${cls} dim draw`, d: seg([0, 0], sc(d, len)), pathLength: 1, 'data-g': gname, style: dly(t, 0.45) }, g);
+      el('path', { class: `${cls} ttail dim fade`, d: seg(sc(d, len + 4.5), sc(d, len + 13)), 'data-g': gname, style: dly(t + 0.35) }, g);
+    };
+    ray('ax dA', [1, 0], L, t0, 'dA');
+    ray('ax dB', [0, 1], L, t0 + 0.08, 'dB');
+    if (kind === 'excess') {
+      for (const [i, d] of TYPE.legs.entries()) ray('tleg', d, Math.min(L / d[0], L / d[1]), t0 + 0.3 + 0.08 * i, 'leg');
+      // the interior vertex, with its two dashed rays pointing back the way the legs came
+      const V = sc(TYPE.inner, L), back = (d, t) => [V[0] - d[0] * t, V[1] - d[1] * t];
+      for (const d of TYPE.legs)
+        el('path', { class: 'tdash dim fade', d: seg(back(d, 3.6), back(d, TYPE.dash * L)), style: dly(t0 + 0.75) }, g);
+      el('circle', { class: 'tdot dim pop', cx: at(...V)[0], cy: at(...V)[1], r: 2.9, style: dly(t0 + 0.65) }, g);
+    }
+    // the red diagonal ray of the subdivision, drawn by script
+    const red = el('path', { class: 'rray dim', 'data-g': 'exc', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1,
+                             d: seg([0, 0], [L, L]) }, g);
+    const k = Math.SQRT1_2;
+    const redTail = el('path', { class: 'rray ttail dim', 'data-g': 'exc', opacity: 0,
+                                 d: seg([L + 4.5 * k, L + 4.5 * k], [L + 13 * k, L + 13 * k]) }, g);
+    const O = at(0, 0);
+    el('circle', { class: 'tdot dim pop', cx: O[0], cy: O[1], r: 3.1, style: dly(t0 + 0.4) }, g);
+    return r => {
+      red.setAttribute('stroke-dashoffset', (1 - clamp01(r / 0.85)).toFixed(4));
+      redTail.setAttribute('opacity', clamp01((r - 0.8) / 0.2).toFixed(3));
+    };
+  }
+
+  // ---- right panel: NLog_Λ(X|D), and its replacement NLog_Λ(X̃|D̃) ----
+  function nlogPanel(g, t0) {
+    const id = 'nclip' + (clipN++), defs = el('defs', {}, g);
+    el('rect', { x: -2000, y: 0, width: 4000, height: 2000 }, el('clipPath', { id: id + 'lo' }, defs));
+    el('rect', { x: -2000, y: -2000, width: 4000, height: 2000 }, el('clipPath', { id: id + 'hi' }, defs));
+    const mainS = NLOG.main.map(flat), excS = NLOG.excess.map(upright);
+    const mainD = blobD(mainS), excD = blobD(excS);
+    const sinking = [], fading = [];                 // parts of the excess component
+    // one half of the upright sheet: below the flat one (mostly hidden by it) or above it
+    const half = (side, d0) => {
+      const inner = el('g', {}, g); sinking.push(inner);
+      const h = el('g', { 'clip-path': `url(#${id}${side})` }, linkOr(inner, 'excess'));
+      el('path', { class: 'paper fade' + (side === 'hi' ? ' fitme' : ''), d: excD, style: dly(d0 + 0.2) }, h);
+      el('path', { class: 'exctint fade', d: excD, style: dly(d0 + 0.2) }, h);
+      el('path', { class: 'blob dim draw', d: excD, pathLength: 1, style: dly(d0, 0.9) }, h);
+      return inner;
+    };
+    half('lo', t0 + 0.8);
+
+    const mainG = linkOr(g, 'main');
+    el('path', { class: 'paper fade fitme', d: mainD, style: dly(t0 + 0.3) }, mainG);
+    el('path', { class: 'blobfill fade', d: mainD, style: dly(t0 + 0.3) }, mainG);
+    el('path', { class: 'blob dim draw', d: mainD, pathLength: 1, style: dly(t0, 1.0) }, mainG);
+    const L = NLOG.L, h = (L + 8) / 2, [cu, cw] = NLOG.mainPic;
+    const rMain = typePic(mainG, (x, y) => flat([cu - h + x, cw - h + y]), L, 'main', t0 + 1.4);
+
+    const up = half('hi', t0 + 0.8);
+    const fl = chord(blobPoly(mainS)), ex = chord(blobPoly(excS));        // the line where the sheets meet
+    el('path', { class: 'meet dim draw', d: `M${P(Math.max(fl[0], ex[0]) + 2, 0)}L${P(Math.min(fl[1], ex[1]) - 2, 0)}`,
+                 pathLength: 1, style: dly(t0 + 1.6, 0.5) }, up);
+    const Le = NLOG.Lexc, he = (Le + 8) / 2, [eu, ez] = NLOG.excPic;
+    const rExc = typePic(up, (x, y) => upright([eu - he + x, ez - he + y]), Le, 'excess', t0 + 1.7);
+
+    // hidden edges, dashed: the flat sheet behind the upright one, and the upright one below the flat one
+    const gm = el('g', {}, el('g', { class: 'fade', style: dly(t0 + 2.2) }, g)); fading.push(gm);
+    el('path', { class: 'ghost', d: mainD }, gm);
+    const ge = el('g', {}, el('g', { class: 'fade', style: dly(t0 + 2.2) }, g)); sinking.push(ge);
+    el('path', { class: 'ghost', d: excD }, ge);
+
+    const xs = mainS.map(p => p[0]), cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const labs = el('g', {}, g);
+    const nl = tl => [['NLog', ''], ['Λ', 'sub'], ...pair(tl)];
+    const l0 = panelName(labs, cx, NLOG.labelY, nl(''), t0 + 2.4), l1 = panelName(labs, cx, NLOG.labelY, nl(' tilde'));
+    return {
+      ray: r => { rMain(r); rExc(r); },
+      fade: f => {
+        const k = 1 - 0.14 * f;                       // the upright sheet sinks a little as it fades
+        for (const p of sinking.concat(fading)) {
+          p.setAttribute('opacity', (1 - f).toFixed(3));
+          p.style.visibility = f > 0.999 ? 'hidden' : '';
+        }
+        for (const p of sinking) p.setAttribute('transform', `scale(1 ${k.toFixed(4)})`);
+        l0.setAttribute('opacity', (1 - f).toFixed(3)); l1.setAttribute('opacity', f.toFixed(3));
+      },
+    };
+  }
+
+  const LAYOUTS = {
+    wide: { A: [0, 0], B: [360, 40], width: 840 },     // the viewBox is fitted around the content
+    tall: { A: [0, 0], B: [10, 318] },
+  };
+
+  let STATE = null;
+  function build(name) {
+    const Lyt = LAYOUTS[name];
+    svg.replaceChildren();
+    const at = ([x, y]) => el('g', { transform: `translate(${x} ${y})` }, svg);
+    const blow = pairPanel(at(Lyt.A), 0);
+    const nlog = nlogPanel(at(Lyt.B), 1.6);
+    STATE = { blow, ray: nlog.ray, fade: nlog.fade };
+    setState(0, 0, 0);
+    placeTildes();
+    // fit the viewBox around the blobs and labels
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    svg.querySelectorAll('.fitme, text').forEach(n => {
+      const b = n.getBBox(), m = n.getCTM(), r = svg.getCTM();
+      const pts = [[b.x, b.y], [b.x + b.width, b.y + b.height]].map(([x, y]) => {
+        const p = new DOMPoint(x, y).matrixTransform(r.inverse().multiply(m)); return [p.x, p.y]; });
+      for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    });
+    const pad = 12, w = Lyt.width || (x1 - x0 + 2 * pad), cx = (x0 + x1) / 2;
+    svg.setAttribute('viewBox', [cx - w / 2, y0 - pad, w, y1 - y0 + 2 * pad].map(v => v.toFixed(1)).join(' '));
+    svg.querySelectorAll('.fig-link').forEach(a => { addHit(a); wireLink(a); });
+  }
+  function setState(s, r, f) { STATE.blow(s); STATE.ray(r); STATE.fade(f); }
+
+  /* ---------------------------------------------------------------------
+     Animation: CSS draws/fades the first picture; script drives the blowup.
+     --------------------------------------------------------------------- */
+  const TIMES = { blow: [5.2, 1.7], ray: [5.9, 1.1], fade: [7.7, 1.4], end: 9.4,   // [start, duration] in seconds
+                  drawn: 4.8 };                                                      // when the CSS-drawn first picture is complete
+
+  function playIntro() {
+    cancelAnimationFrame(raf); clearTimeout(introTimer);
+    if (reduceMotion()) { svg.classList.remove('intro'); setState(1, 1, 1); return; }
+    svg.classList.remove('intro'); void svg.getBoundingClientRect(); svg.classList.add('intro');
+    setState(0, 0, 0);
+    const start = performance.now();
+    const ph = (t, [a, d]) => clamp01((t - a / SPEED) / (d / SPEED));
+    const step = now => {
+      const t = (now - start) / 1000;
+      setState(ease(ph(t, TIMES.blow)), ph(t, TIMES.ray), ease(ph(t, TIMES.fade)));
+      if (t < TIMES.end / SPEED) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    introTimer = setTimeout(() => svg.classList.remove('intro'), 1000 * TIMES.drawn / SPEED);
+  }
+
+  return {
+    label: 'A surface X whose boundary D has two components meeting at a point, next to the space NLog of naive '
+         + 'log maps: a flat main component and an upright excess component crossing it along a line, each labelled by '
+         + 'its naive tropical type. Blowing up the point where the components of D meet adds a red exceptional curve '
+         + 'and a red ray to the tropical types, and the excess component disappears.',
+    build, play: playIntro, finish: () => setState(1, 1, 1),
+  };
 }
 
 /* =====================================================================
@@ -845,20 +1211,30 @@ for (const [key, p] of Object.entries(PAGES)) {
   else a.addEventListener('click', e => { e.preventDefault(); openPanel(key, a); });
   textnav.append(a, ' ');
 }
-document.getElementById('replay').addEventListener('click', playIntro);
 document.querySelectorAll('[data-panel]').forEach(a => a.addEventListener('click', e => {   // e.g. the job-market line
   if (LINK_TARGET) return;
   e.preventDefault(); openPanel(a.dataset.panel, a);
 }));
 
+// Which figure: the blowup with probability BLOWUP_ODDS, otherwise the degeneration.
+// …/?fig=degeneration or …/?fig=blowup shows that one.
+const FIGURES = { degeneration: degenerationFigure, blowup: blowupFigure };
+const asked = new URLSearchParams(location.search).get('fig');
+const figName = FIGURES[asked] ? asked : (Math.random() < BLOWUP_ODDS ? 'blowup' : 'degeneration');
+const FIG = FIGURES[figName]();
+svg.setAttribute('aria-label', FIG.label);
+document.querySelectorAll('#caption .default').forEach(s => { s.hidden = s.dataset.fig !== figName; });
+document.querySelectorAll('#caption .replay').forEach(b => b.addEventListener('click', FIG.play));
+
 const narrow = matchMedia('(max-width: 640px)');
-build(narrow.matches ? 'tall' : 'wide');
-playIntro();
+FIG.build(narrow.matches ? 'tall' : 'wide');
+FIG.play();
+if (document.fonts) document.fonts.ready.then(placeTildes);
 narrow.addEventListener('change', () => {          // re-lay out, showing the final state
   cancelAnimationFrame(raf); clearTimeout(introTimer);
   svg.classList.remove('intro');
-  build(narrow.matches ? 'tall' : 'wide');
-  morphB(1);
+  FIG.build(narrow.matches ? 'tall' : 'wide');
+  FIG.finish();
 });
 
 // deep link, e.g. …/#teaching, or …/?p=teaching (what the redirects from the old site addresses use)

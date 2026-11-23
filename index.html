@@ -288,6 +288,7 @@
         <span class="extras"><a href="https://drive.google.com/file/d/147F4YD-JLqIgKXsBjUBqWmhcJ-9Hl5n5/view?usp=sharing">Exercises 3</a></span></li>
     <li><a href="https://drive.google.com/file/d/1A8WdTNKrrD7WWG9tLMaflsa1bz8b1D9s/view?usp=sharing">Tropical Bézout’s theorem</a>
         <span class="extras"><a href="https://drive.google.com/file/d/1yNHMFLD4SIYwmvs5MHd0NLXs2v5t3eWI/view?usp=sharing">Exercises 4</a></span></li>
+    <li><a href="/notes/Lecture%206%20Trop%20Geom.pdf">Enumerative geometry of plane curves</a></li>
   </ol>
 </template>
 
@@ -790,7 +791,7 @@ async function openPanel(key, from, { animate = true, push = true } = {}) {
   if (!nodes) { location.href = PAGES[key].href; return; }
   const wasOpen = panel.open;
   content.replaceChildren(...nodes);
-  content.querySelectorAll('a[href^="http"]').forEach(l => { l.target = '_blank'; l.rel = 'noopener'; });
+  content.querySelectorAll('a[href^="http"], a[href$=".pdf"]').forEach(l => { l.target = '_blank'; l.rel = 'noopener'; });
   if (from) origin = from;
   if (!wasOpen) panel.showModal();
   panel.scrollTop = 0;

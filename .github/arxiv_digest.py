@@ -109,6 +109,9 @@ STUDENTS = {
         'Giulia Gugiatti', 'Elana Kalashnikov', 'Navid Nabijou', 'Thomas Prince|Tom Prince', 'Qaasim Shafi',
         'Andrew Strangeway',
     ],
+    'Navid Nabijou': [
+        'Cat Rust', 'Dan Simms|Daniel Simms', 'Andy Xiaoan Yang|Xiaoan Yang',
+    ],
     # Sam Johnston and Soham Karwa: no students yet.
 }
 AUTHOR_WEIGHT = 6

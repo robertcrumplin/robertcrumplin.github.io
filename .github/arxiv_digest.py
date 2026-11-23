@@ -7,7 +7,7 @@ Run every morning by .github/workflows/arxiv-digest.yml; it can also be run by h
     python .github/arxiv_digest.py            (reads the live feed)
     python .github/arxiv_digest.py feed.xml   (reads a saved copy of the feed)
 
-To tune what gets picked up, edit TOPICS, AUTHORS and THRESHOLD.
+To tune what gets picked up, edit TOPICS, AUTHORS, STUDENTS and THRESHOLD.
 """
 import datetime as dt
 import email.utils
@@ -62,14 +62,47 @@ TOPICS = [
     (r'calabi-yau', 1), (r'del pezzo', 1), (r'\btoric\b', 1), (r'\bfano\b', 1), (r'blow(ing)?[- ]?ups?\b', 1),
     (r'genus[- ](zero|one|0|1|two|g)\b', 1),
 ]
-# People to follow: any paper with one of them as an author is listed (full names; accents ignored).
+# People to follow: any paper with one of them as an author is always listed, at the top of its day.
+# A name matches an author whole (not as part of a longer name), ignoring accents, case, hyphens and full
+# stops; give other spellings after a '|', e.g. 'Tom Graber|Thomas Graber'.
 AUTHORS = [
     'Mark Gross', 'Bernd Siebert', 'Paul Hacking', 'Sean Keel', 'Rahul Pandharipande', 'Dhruv Ranganathan',
     'Navid Nabijou', 'Georg Oberdieck', 'Alessio Corti', 'Dan Abramovich', 'Qile Chen', 'Jonathan Wise',
-    'Luca Battistella', 'Hsian-Hua Tseng', 'Fenglong You', 'Helge Ruddat', 'Hulya Arguz', 'Pierrick Bousseau',
+    'Luca Battistella', 'Hsian-Hua Tseng', 'Fenglong You', 'Helge Ruddat', 'Hülya Argüz', 'Pierrick Bousseau',
     'Michel van Garrel', 'Tim Grafnitz', 'Ravi Vakil', 'Aleksey Zinger', 'Sam Johnston', 'Qaasim Shafi',
     'Leo Herr', 'Soham Karwa', 'Davesh Maulik', 'Andrei Okounkov', 'Tom Coates', 'Yongbin Ruan',
 ]
+# PhD students, past and present, of some of the people above; also always listed, marked "student of …".
+# Left out because the name is too common to match safely: Yu Wang (Gross), Jianhua Wang and James Spencer
+# (Abramovich).
+STUDENTS = {
+    'Rahul Pandharipande': [
+        'Younghan Bae', 'Benjamin Bakker', 'Ignacio Barros', 'Tim-Henrik Buelles', 'Alessio Cela', 'Yaim Cooper',
+        'Tom Graber|Thomas Graber', 'Felix Janda', 'Davesh Maulik', 'Miguel Moreira', 'Georg Oberdieck',
+        'Aaron Pixton', 'Christoph Schiessl', 'Johannes Schmitt', 'Iman Setayesh', 'Junliang Shen',
+        'Vivek Shende', 'Aitor Iribar López', 'Lycka Drakengren',
+    ],
+    'Dan Abramovich': [
+        'Kenneth Ascher', 'Dori Bejleri', 'Jiun-Cheng Chen', 'Qile Chen', 'Tangli Ge', 'Noah Giansiracusa',
+        'Alicia Harper', 'Giovanni Inchiostro', 'Kalle Karu', 'Gabriele La Nave', 'Steffen Marcus',
+        'Sam Molcho|Samouil Molcho', 'Patricia Pacelli', 'Ming Hao Quek', 'Evangelos Routis',
+        'Henning Úlfarsson', 'Martin Ulirsch', 'Jonathan Wise',
+    ],
+    'Mark Gross': [
+        'Lawrence Barrott|Lawrence Jack Barrott', 'Daniel Budreau', 'Andrei Căldăraru', 'Ricardo Castaño-Bernard',
+        'Man-Wai Cheung|Man Wai Cheung|Man-Wai Mandy Cheung', 'Karl Fredrickson', 'Michael Kasa', 'Diego Matessi',
+        'Brandon Meredith', 'Peter Overholser', 'Simone Pavanelli', 'Michael Slawinski', 'Xuanchun Lu',
+    ],
+    'Davesh Maulik': [
+        'Chun Hong Lo', 'Svetlana Makarova', 'Tudor Pădurariu', 'Anne Larsen',
+    ],
+    'Dhruv Ranganathan': [
+        'Qaasim Shafi', 'Patrick Kennedy-Hunt', 'Siddarth Kannan', 'Wanlong Zheng', 'Ajith Urundolil Kumaran',
+        'Terry Dekun Song|Terry Song|Dekun Song', 'Siao Chi Mok', 'Owen Mackenzie', 'Emily Dodwell',
+        'Sae Koyama', 'Ray Shang',
+    ],
+    # Sam Johnston and Soham Karwa: no students yet.
+}
 AUTHOR_WEIGHT = 6
 
 # ---------------------------------------------------------------------------------------------
@@ -120,7 +153,45 @@ def read_feed(text):
 # Scoring
 # ---------------------------------------------------------------------------------------------
 COMPILED = [(re.compile(p), w, p) for p, w in TOPICS]
-FOLLOWED = [(plain(a), a) for a in AUTHORS]
+
+
+def name_key(s):
+    """A name with accents, case, hyphens and full stops ignored: 'Jiun-Cheng Chen' -> 'jiun cheng chen'."""
+    return ' '.join(re.sub(r'[-.‐–]', ' ', plain(s)).split())
+
+
+def follow_list():
+    """(pattern, advisor or None) for every followed name and spelling; people followed directly come first."""
+    out, direct = [], set()
+    for entry in AUTHORS:
+        for spelling in entry.split('|'):
+            out.append((name_key(spelling), None))
+            direct.add(name_key(spelling))
+    for advisor, students in STUDENTS.items():
+        for entry in students:
+            for spelling in entry.split('|'):
+                if name_key(spelling) not in direct:
+                    out.append((name_key(spelling), advisor))
+    return [(re.compile(r'(^| )' + re.escape(k) + r'( |$)'), adv) for k, adv in out]
+
+
+FOLLOWED = follow_list()
+
+
+def followed_authors(authors):
+    """The authors of a paper who are followed, as written in the feed, and a note for each student."""
+    people, notes = [], []
+    for a in re.split(r',|\band\b', authors):
+        a = a.strip()
+        key = name_key(a)
+        for rx, advisor in FOLLOWED:
+            if key and rx.search(key):
+                if a not in people:
+                    people.append(a)
+                    if advisor:
+                        notes.append(f'{a} is a student of {advisor.split()[-1]}')
+                break
+    return people, notes
 
 
 def score(p):
@@ -131,7 +202,7 @@ def score(p):
         if mt or ma:
             total += w * (2 if mt else 1)
             hits.append((w * (2 if mt else 1), (mt or ma).group(0)))
-    people = [name for key, name in FOLLOWED if key in plain(p['authors'])]
+    people, notes = followed_authors(p['authors'])
     if people:
         total += AUTHOR_WEIGHT
     if p['categories'] and p['categories'][0] in HOME:
@@ -141,7 +212,7 @@ def score(p):
         h = h.strip(' ,(')
         if h not in tags:
             tags.append(h)
-    return total, tags[:5], people
+    return total, tags[:5], people, notes
 
 
 # ---------------------------------------------------------------------------------------------
@@ -168,6 +239,8 @@ def render(days, updated):
             who = e(p['authors'])
             for name in p.get('people', []):
                 who = who.replace(e(name), f'<b>{e(name)}</b>')
+            if p.get('notes'):
+                who += f' <span class="via">· {e("; ".join(p["notes"]))}</span>'
             cats = ' '.join(f'<span class="cat">{e(c)}</span>' for c in p['categories'][:3])
             tags = ' '.join(f'<span class="tag">{e(t)}</span>' for t in p['tags'])
             cross = ' <span class="cross">cross-list</span>' if p['kind'] != 'new' else ''
@@ -208,6 +281,7 @@ def render(days, updated):
   h3 a:hover {{ color: var(--accent); }}
   .who {{ margin: .15rem 0 0; }}
   .who b {{ font-weight: 600; color: var(--accent); }}
+  .via {{ color: var(--muted); font-size: .9rem; font-style: italic; }}
   .meta {{ margin: .1rem 0 0; color: var(--muted); font-size: .9rem; }}
   .meta a {{ color: inherit; }}
   .cat {{ white-space: nowrap; }}
@@ -254,10 +328,11 @@ def main():
         if p['kind'] not in INCLUDE or p['id'] in ids or p['id'] in seen:
             continue
         ids.add(p['id'])
-        s, tags, people = score(p)
+        s, tags, people, notes = score(p)
         need = THRESHOLD if p['categories'] and p['categories'][0] in HOME else THRESHOLD + 3
         if s >= need or people:
-            picked.append({**p, 'score': s, 'tags': tags, 'people': people, 'snippet': snippet(p['abstract'])})
+            picked.append({**p, 'score': s, 'tags': tags, 'people': people, 'notes': notes,
+                           'snippet': snippet(p['abstract'])})
             del picked[-1]['abstract']
     picked.sort(key=lambda p: (-(bool(p['people'])), -p['score']))
 

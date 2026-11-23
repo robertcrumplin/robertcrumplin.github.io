@@ -118,6 +118,22 @@
   .lab.dA { fill: var(--dA); stroke: none; }  .lab.dB { fill: var(--dB); stroke: none; }  .lab.exc { fill: var(--exc); }
   .hitline  { fill: none; stroke: transparent; stroke-width: 16; stroke-linecap: round; pointer-events: stroke; }
   .nohit    { pointer-events: none; }
+  /* the Vakil–Zinger figure */
+  .ghostcomp { fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; }
+  .sph      { fill: none; stroke-width: 1.8; stroke-linecap: round; }
+  .sph.back { stroke-dasharray: 2.5 4; opacity: .75; }
+  .tedge    { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+  .rarc     { fill: none; stroke: var(--exc); stroke-width: 1.6; stroke-dasharray: 3 4; stroke-linecap: round; }
+  .fold     { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
+  circle.hit { fill: transparent; stroke: none; pointer-events: all; }
+  /* the scattering figure */
+  .dC { stroke: var(--ink); }  .lab.dC { fill: var(--ink); stroke: none; }
+  .fanray   { fill: none; stroke-width: 1.5; stroke-dasharray: 1.5 4.5; stroke-linecap: round; }
+  .wall     { fill: none; stroke: var(--exc); stroke-width: 2.2; stroke-linecap: round; }
+  .bline    { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }
+  .barrow   { fill: var(--ink); stroke: var(--ink); stroke-width: 1; stroke-linejoin: round; }
+  .lit.wall, .lit.bline { stroke-width: 3; }  .lit.fanray { stroke-width: 2.2; }
+  .lit.sph, .lit.tedge { stroke-width: 3; }  .lit.rarc { stroke-width: 2.4; }
   .lit.dcurve { stroke-width: 3.3; }  .lit.ecurve { stroke-width: 3.5; }  .lit.blob { stroke-width: 2.3; }
   .lit.ax, .lit.tleg, .lit.rray { stroke-width: 2.5; }
 
@@ -200,6 +216,21 @@
         glued along <i>D</i><sub>1</sub> and <i>D</i><sub>2</sub>. The genus-two curve <i>C<sub>t</sub></i>&nbsp;⊂&nbsp;<i>X<sub>t</sub></i>
         breaks with it into three rational pieces, one in each <i>Y<sub>i</sub></i>, meeting in pairs of nodes on the <i>D<sub>j</sub></i>.
         Tropicalising gives a genus-two tropical curve Γ mapping to trop&nbsp;<i>X</i>.
+        <button class="replay" type="button">replay</button>
+      </span>
+      <span class="default" data-fig="scatter" hidden>
+        A toric surface, whose boundary is a triangle of lines, has the trivial scattering diagram on ℝ<sup>2</sup>.
+        Blowing up a point on each of two of the lines adds an initial wall in each of the corresponding directions;
+        scattering them produces one more ray, and the consistent diagram has five rays. Two broken lines come in
+        parallel and cross a wall, one going straight on and one bending, and both end at the same point <i>Q</i>.
+        <button class="replay" type="button">replay</button>
+      </span>
+      <span class="default" data-fig="vz" hidden>
+        A genus-one curve whose elliptic component <i>E</i> is contracted, with rational tails <i>R</i><sub>1</sub> and <i>R</i><sub>2</sub>,
+        and its tropical curve Γ. Maps like this form an excess component of the space of stable maps, meeting the main component
+        where it is singular. The Vakil–Zinger blowups, tropically the radial alignment ordering the tails by their distance
+        from the core, subdivide the cone of edge lengths along ℓ<sub>1</sub>&nbsp;=&nbsp;ℓ<sub>2</sub>, kill the excess component,
+        and leave the main component smooth.
         <button class="replay" type="button">replay</button>
       </span>
       <span class="default" data-fig="blowup" hidden>
@@ -471,12 +502,27 @@ const SLOTS = {
   main:   { page: 'research', sym: 'main component' },
   excess: { page: 'teaching', sym: 'excess component' },
   types:  { page: 'tropical', sym: 'tropical types' },
+  // the Vakil–Zinger figure (and 'trop' above, for its arrow and its cone)
+  vzcurve: { page: 'about',    sym: 'C → ℙⁿ' },
+  r1:      { page: 'toric',    sym: 'R₁, ℓ₁' },
+  r2:      { page: 'contact',  sym: 'R₂, ℓ₂' },
+  radial:  { page: 'talks',    sym: 'radial alignment' },
+  vzmain:  { page: 'research', sym: 'main component' },
+  ghost:   { page: 'teaching', sym: 'excess component' },
+  // the scattering figure (and 'd1', 'd2' above for D₁, D₂)
+  tsurf:   { page: 'about',    sym: 'toric surface' },
+  d3:      { page: 'cv',       sym: 'D₃' },
+  excs:    { page: 'talks',    sym: 'E₁, E₂' },
+  fan:     { page: 'tropical', sym: 'ℝ² and its fan' },
+  scat:    { page: 'research', sym: 'scattering diagram' },
+  blines:  { page: 'teaching', sym: 'broken lines' },
 };
 // Set to '_blank' (or '_top') when the figure is embedded in an iframe, e.g. a Google Sites
 // "Embed code" box. That turns off the in-page panels and makes the links plain links.
 const LINK_TARGET = null;
 const SPEED = 1;   // >1 makes the intro faster
-const BLOWUP_ODDS = 1 / 3;   // how often the page opens with the blowup figure instead of the degeneration
+// How often the page opens on each figure (they should add up to 1).
+const ODDS = { degeneration: 1 / 2, blowup: 1 / 6, vz: 1 / 6, scatter: 1 / 6 };
 
 /* =====================================================================
    2. DRAWING HELPERS (used by both figures)
@@ -496,16 +542,18 @@ function el(tag, attrs = {}, parent) {
 const T_ = s => (s / SPEED).toFixed(2) + 's';
 const dly = (s, dur) => `--d:${T_(s)}` + (dur ? `;--dur:${T_(dur)}` : '');
 
-// math label: parts = [[text, kind], ...], kind made of 'i' (italic), 'sub', 'tilde' (a tilde over it)
+// math label: parts = [[text, kind], ...], kind a list of words: 'i' (italic), 'sub', 'sup', and an accent
+// over the first letter, 'tilde' or 'bar'
 function mathText(parent, x, y, parts, { anchor = 'middle', cls = '', style, g } = {}) {
   const t = el('text', { x, y, class: 'lab dim ' + cls, 'text-anchor': anchor, style, 'data-g': g }, parent);
-  let low = false;
+  let off = 0;                                       // how far the text is currently shifted down
   for (const [s, kind] of parts) {
-    const isSub = kind.includes('sub');
-    const ts = el('tspan', { class: (isSub ? 'sub ' : '') + (kind.includes('i') ? 'i' : '') }, t);
-    if (isSub && !low) { ts.setAttribute('dy', 6); low = true; }
-    else if (!isSub && low) { ts.setAttribute('dy', -6); low = false; }
-    if (kind.includes('tilde')) ts.dataset.tilde = '1';
+    const k = kind.split(' '), isSub = k.includes('sub'), isSup = k.includes('sup');
+    const ts = el('tspan', { class: (isSub || isSup ? 'sub ' : '') + (k.includes('i') ? 'i' : '') }, t);
+    const want = isSub ? 6 : isSup ? -8 : 0;
+    if (want !== off) { ts.setAttribute('dy', want - off); off = want; }
+    if (k.includes('tilde')) ts.dataset.tilde = 'tilde';
+    if (k.includes('bar')) ts.dataset.tilde = 'bar';
     ts.textContent = s;
   }
   return t;
@@ -520,9 +568,11 @@ function placeTildes() {
       if (ts.dataset.tilde) {
         let b; try { b = t.getExtentOfChar(idx); } catch { b = null; }
         if (b) {
-          const cx = b.x + b.width / 2 + 0.1 * fs, ty = base - 0.85 * fs, w = 0.46 * fs, a = 0.06 * fs;
-          el('path', { class: 'tilde ' + [...t.classList].filter(c => c !== 'lab').join(' '), 'data-g': t.getAttribute('data-g'),
-                       d: `M${P(cx - w / 2, ty + 0.6 * a)}C${P(cx - w / 4, ty - 1.9 * a)} ${P(cx + w / 4, ty + 1.9 * a)} ${P(cx + w / 2, ty - 0.6 * a)}` },
+          const it = ts.classList.contains('i'), cx = b.x + b.width / 2 + (it ? 0.1 : 0) * fs, ty = base - 0.85 * fs;
+          const w = (ts.dataset.tilde === 'bar' ? 0.62 : 0.46) * fs, a = 0.06 * fs;
+          const d = ts.dataset.tilde === 'bar' ? `M${P(cx - w / 2, ty)}L${P(cx + w / 2, ty)}`
+            : `M${P(cx - w / 2, ty + 0.6 * a)}C${P(cx - w / 4, ty - 1.9 * a)} ${P(cx + w / 4, ty + 1.9 * a)} ${P(cx + w / 2, ty - 0.6 * a)}`;
+          el('path', { class: 'tilde ' + [...t.classList].filter(c => c !== 'lab').join(' '), 'data-g': t.getAttribute('data-g'), d },
              t.parentNode);
         }
       }
@@ -1136,6 +1186,596 @@ function blowupFigure() {
 }
 
 /* =====================================================================
+   4c. FIGURE C: the Vakil–Zinger desingularisation, with its tropical picture (radial alignment)
+   ===================================================================== */
+function vzFigure() {
+  /* ---------------------------------------------------------------------
+     Geometry (coordinates are local to each panel; y points down)
+     C: a genus-one curve whose elliptic component E is contracted, with rational tails R₁, R₂.
+     Γ: its tropical curve, a genus-one core vertex with edges of lengths ℓ₁, ℓ₂ to the tails.
+     M: the moduli space. The main component is a sheet folded into a ridge along its singular
+        locus, where the excess component (maps contracting E) stands on it. The Vakil–Zinger blowup
+        (s: 0 → 1) rounds the fold, leaving a red exceptional line, and lifts the excess component
+        off; then it is killed (f: 0 → 1). Tropically the blowup is radial alignment: the tails
+        are ordered by distance from the core (red circles in Γ), which subdivides the cone of
+        (ℓ₁, ℓ₂) along the red ray ℓ₁ = ℓ₂.
+     --------------------------------------------------------------------- */
+  const add = (a, b, t = 1) => [a[0] + t * b[0], a[1] + t * b[1]];
+  const unit = ([x, y]) => { const n = Math.hypot(x, y); return [x / n, y / n]; };
+  const arcPts = (c, rx, ry, t0, t1, n = 28) => {
+    const pts = [];
+    for (let k = 0; k <= n; k++) { const t = t0 + (t1 - t0) * k / n; pts.push([c[0] + rx * Math.cos(t), c[1] + ry * Math.sin(t)]); }
+    return pts;
+  };
+  function blobD(pts) {                              // closed Catmull–Rom spline through pts
+    const n = pts.length, q = i => pts[(i + n) % n];
+    let d = 'M' + P(...pts[0]);
+    for (let i = 0; i < n; i++) {
+      const p0 = q(i - 1), p1 = q(i), p2 = q(i + 1), p3 = q(i + 2);
+      d += 'C' + P(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6) + ' '
+               + P(p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6) + ' ' + P(...p2);
+    }
+    return d + 'Z';
+  }
+  function blobPoly(pts, m = 14) {                   // the same spline, sampled
+    const n = pts.length, q = i => pts[(i + n) % n], out = [];
+    for (let i = 0; i < n; i++) {
+      const p0 = q(i - 1), p1 = q(i), p2 = q(i + 1), p3 = q(i + 2);
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      for (let k = 0; k < m; k++) {
+        const t = k / m, r = 1 - t;
+        out.push([0, 1].map(j => r * r * r * p1[j] + 3 * r * r * t * c1[j] + 3 * r * t * t * c2[j] + t * t * t * p2[j]));
+      }
+    }
+    return out;
+  }
+  function chord(pg, y = 0) {                        // where a closed polygon meets the line at height y
+    let lo = Infinity, hi = -Infinity;
+    pg.forEach((a, i) => {
+      const b = pg[(i + 1) % pg.length];
+      if ((a[1] - y) * (b[1] - y) <= 0 && a[1] !== b[1]) {
+        const x = a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]);
+        lo = Math.min(lo, x); hi = Math.max(hi, x);
+      }
+    });
+    return [lo, hi];
+  }
+
+  const CUR = {
+    E: { c: [-20, 0], a: 52, b: 30 },               // the contracted elliptic component
+    tails: [{ t: -0.70, r: 22, g: 'r1', cls: 'dA', lab: [62, -54] },     // R₁ is attached at parameter t of E
+            { t: 0.61, r: 20, g: 'r2', cls: 'dB', lab: [62, 62] }],      // R₂
+    Elab: [-82, 6],
+  };
+  const GAM = {
+    core: [-42, 0], ring: 7,                        // the genus-one core vertex
+    v: [{ ang: -0.49, len: 72, g: 'r1', cls: 'dA', lab: -1 },          // the edge to R₁: direction, length ℓ₁
+        { ang: 0.40, len: 98, g: 'r2', cls: 'dB', lab: 1 }],           // to R₂: ℓ₂
+    arc: 1.0,                                       // the radial-alignment circles are drawn for angles in ±arc
+  };
+  const MOD = {
+    kx: 0.45, ky: 0.55, c: 0.22, r1: 28,            // projection; slope of the ridge; how far the blowup rounds it
+    main: [[-145, -4], [-130, -54], [-70, -78], [10, -80], [90, -70], [130, -30], [134, 30], [98, 66], [18, 74], [-70, 72], [-128, 44]],
+    ghost: [[4, 28], [12, 80], [44, 104], [90, 100], [116, 74], [120, 28], [110, -20], [60, -30], [12, -22]],
+    cone: { c: [-58, -48], L: 44 },                 // the cone of (ℓ₁, ℓ₂), on the near side of the ridge
+    point: [0.58, 0.79],                            // where Γ sits in the cone (ℓ₁ < ℓ₂)
+    lift: 18,                                       // how far the excess component lifts off before it goes
+    labelY: 96,
+  };
+  const height = (w, r) => -MOD.c * (Math.abs(w) >= r || r <= 0 ? Math.abs(w) : (w * w + r * r) / (2 * r));   // a ridge
+  const proj = (u, w, r) => [u + MOD.kx * w, -MOD.ky * w - height(w, r)];
+  const mainPoly = blobPoly(MOD.main), mainChord = chord(mainPoly);
+  const ghostChord = chord(blobPoly(MOD.ghost));
+
+  /* ---------------------------------------------------------------------
+     Building the SVG
+     --------------------------------------------------------------------- */
+  const linkOr = (parent, key, light = key) => SLOTS[key] ? figLink(parent, key, light) : el('g', {}, parent);
+  function panelName(parent, x, y, parts, d, { cls = 'name', g, anchor } = {}) {
+    const outer = el('g', { class: d == null ? '' : 'fade', style: d == null ? null : dly(d) }, parent);
+    const inner = el('g', {}, outer);
+    mathText(inner, x, y, parts, { cls, g, anchor });
+    return inner;
+  }
+  let clipN = 0;
+
+  // ---- C: E contracted, with the tails R₁, R₂ ----
+  function curvePanel(g, t0) {
+    const { c, a, b } = CUR.E;
+    const E = linkOr(g, 'vzcurve');
+    const ed = poly(arcPts(c, a, b, 0, 2 * Math.PI, 60), true);
+    el('path', { class: 'blobfill fade', d: ed, style: dly(t0 + 0.3) }, E);
+    el('path', { class: 'ghostcomp dim draw', d: ed, pathLength: 1, 'data-g': 'vzcurve', style: dly(t0, 1.0) }, E);
+    el('path', { class: 'ghostcomp dim draw', d: poly(arcPts([c[0], c[1] - 3], 22, 9, 0.15 * Math.PI, 0.85 * Math.PI, 16)),
+                 pathLength: 1, 'data-g': 'vzcurve', style: dly(t0 + 0.6, 0.5) }, E);
+    el('path', { class: 'ghostcomp dim draw', d: poly(arcPts([c[0], c[1] + 3], 16, 6, 1.2 * Math.PI, 1.8 * Math.PI, 12)),
+                 pathLength: 1, 'data-g': 'vzcurve', style: dly(t0 + 0.7, 0.4) }, E);
+    mathText(E, ...CUR.Elab, [['E', 'i']], { cls: 'comp fade', anchor: 'end', style: dly(t0 + 1.5), g: 'vzcurve' });
+    for (const [i, T] of CUR.tails.entries()) {
+      const node = [c[0] + a * Math.cos(T.t), c[1] + b * Math.sin(T.t)];
+      const n = unit([Math.cos(T.t) / a, Math.sin(T.t) / b]), ctr = add(node, n, T.r);
+      const R = linkOr(g, T.g);
+      el('circle', { class: 'hit', cx: ctr[0], cy: ctr[1], r: T.r + 4 }, R);
+      el('path', { class: `sph ${T.cls} dim draw`, d: poly(arcPts(ctr, T.r, T.r, Math.PI + Math.atan2(n[1], n[0]), 3 * Math.PI + Math.atan2(n[1], n[0]), 40)),
+                   pathLength: 1, 'data-g': T.g, style: dly(t0 + 0.8 + 0.15 * i, 0.7) }, R);
+      el('path', { class: `sph ${T.cls} dim fade`, d: poly(arcPts(ctr, T.r, 0.32 * T.r, 0, Math.PI, 16)), 'data-g': T.g, style: dly(t0 + 1.4) }, R);
+      el('path', { class: `sph back ${T.cls} dim fade`, d: poly(arcPts(ctr, T.r, 0.32 * T.r, Math.PI, 2 * Math.PI, 16)), 'data-g': T.g, style: dly(t0 + 1.4) }, R);
+      mathText(R, ...T.lab, [['R', 'i'], [String(i + 1), 'sub']], { cls: `${T.cls} fade`, anchor: 'start', style: dly(t0 + 1.5), g: T.g });
+      el('circle', { class: 'pt dim pop nohit', cx: node[0], cy: node[1], r: 3.2, style: dly(t0 + 1.5) }, g);
+    }
+    panelName(E, 0, 96, [['C', 'i'], [' → ℙ', ''], ['n', 'sup']], t0 + 1.6, { g: 'vzcurve' });
+  }
+
+  // ---- the squiggly arrow C ⇝ Γ ----
+  function squiggle(parent, [x0, y0], [x1, y1], key, light, labelParts, labelAt, anchor, t0) {
+    const a = linkOr(parent, key, light);
+    const len = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+    const h = (s, n) => P(x1 - 10 * ux + s * n * -uy, y1 - 10 * uy + s * n * ux);
+    const run = len - 4, waves = Math.max(2, Math.round(run / 13)), A = 3.4, pts = [];
+    for (let k = 0; k <= waves * 12; k++) {
+      const t = k / (waves * 12), d = t * run, env = Math.min(1, t / 0.12, (1 - t) / 0.12);
+      const off = A * env * Math.sin(2 * Math.PI * waves * t);
+      pts.push(P(x0 + d * ux - off * uy, y0 + d * uy + off * ux));
+    }
+    el('path', { class: 'arrow dim draw', pathLength: 1, 'data-g': key,
+                 d: `M${pts.join('L')}L${P(x1, y1)}M${h(1, 6)}L${P(x1, y1)}L${h(-1, 6)}`, style: dly(t0, 0.6) }, a);
+    mathText(a, labelAt[0], labelAt[1], labelParts, { anchor, cls: 'fade', style: dly(t0 + 0.3), g: key });
+  }
+
+  // ---- Γ: the tropical curve, and its radial alignment ----
+  function tropPanel(g, t0) {
+    const core = GAM.core, arcs = [];
+    for (const [i, V] of GAM.v.entries()) {
+      const d = [Math.cos(V.ang), Math.sin(V.ang)], end = add(core, d, V.len), R = linkOr(g, V.g);
+      el('path', { class: 'hitline', d: `M${P(...add(core, d, GAM.ring + 4))}L${P(...end)}` }, R);
+      el('path', { class: `tedge ${V.cls} dim draw`, d: `M${P(...add(core, d, GAM.ring + 1))}L${P(...end)}`, pathLength: 1,
+                   'data-g': `${V.g} gamma`, style: dly(t0 + 0.1 + 0.1 * i, 0.5) }, R);
+      const mid = add(core, d, V.len * 0.55), nrm = [-d[1] * V.lab, d[0] * V.lab];
+      mathText(R, ...add(add(mid, nrm, 15), [0, 6]), [['ℓ', 'i'], [String(i + 1), 'sub']],
+               { cls: `${V.cls} fade`, style: dly(t0 + 0.6), g: `${V.g} gamma` });
+      el('circle', { class: 'tdot dim pop', cx: end[0], cy: end[1], r: 4, 'data-g': `${V.g} gamma`, style: dly(t0 + 0.5) }, R);
+      arcs.push({ r: V.len });
+    }
+    const radialLink = linkOr(g, 'radial');
+    for (const A of arcs) { A.hit = el('path', { class: 'hitline' }, radialLink); A.el = el('path', { class: 'rarc dim', 'data-g': 'radial' }, radialLink); }
+    el('circle', { class: 'tvtx dim pop nohit', cx: core[0], cy: core[1], r: GAM.ring, 'data-g': 'gamma', style: dly(t0) }, g);
+    panelName(g, 0, 96, [['Γ', '']], t0 + 0.7, { g: 'gamma' });
+    return p => {
+      const th = GAM.arc * clamp01(p);
+      arcs.forEach(A => { const d = p <= 0 ? '' : poly(arcPts(core, A.r, A.r, -th, th, 30)); A.el.setAttribute('d', d); A.hit.setAttribute('d', d); });
+      radialLink.style.visibility = p > 0.05 ? '' : 'hidden';
+    };
+  }
+
+  // ---- the moduli space: the folded main component, and the excess component standing on the ridge ----
+  function modPanel(g, t0) {
+    const id = 'vzclip' + (clipN++), defs = el('defs', {}, g);
+    const farClip = el('rect', { x: -2000, y: -2000, width: 4000, height: 2000 }, el('clipPath', { id: id + 'far' }, defs));
+    el('rect', { x: -2000, y: -2000, width: 4000, height: 2000 }, el('clipPath', { id: id + 'up' }, defs));
+
+    const mainLink = linkOr(g, 'vzmain');
+    const fill = el('path', { class: 'paper fade fitme', style: dly(t0 + 0.3) }, mainLink);
+    const tintNear = el('path', { class: 'blobfill fade', style: dly(t0 + 0.3) }, mainLink);
+    const tintFar = el('path', { class: 'blobfill fade', 'clip-path': `url(#${id}far)`, style: dly(t0 + 0.3) }, mainLink);
+    const outline = el('path', { class: 'blob dim draw', pathLength: 1, 'data-g': 'vzmain', style: dly(t0, 1.0) }, mainLink);
+    const creaseG = el('g', {}, mainLink), redG = el('g', { opacity: 0 }, mainLink);
+    const crease = el('path', { class: 'fold dim draw', pathLength: 1, 'data-g': 'vzmain ghost', style: dly(t0 + 0.8, 0.5) }, creaseG);
+    const red = el('path', { class: 'ecurve dim', 'data-g': 'radial vzmain' }, redG);
+
+    // the cone of (ℓ₁, ℓ₂), drawn on the near side of the ridge
+    const cone = linkOr(g, 'trop', 'trop cone');
+    const { c: [cu, cw], L } = MOD.cone, h = (L + 8) / 2;
+    const at = (x, y) => proj(cu - h + x, cw - h + y, 0);
+    const seg = (p, q) => `M${P(...at(...p))}L${P(...at(...q))}`;
+    el('path', { class: 'cone fade', d: poly([at(0, 0), at(L, 0), at(L, L), at(0, L)], true), style: dly(t0 + 1.3) }, cone);
+    for (const [i, [d, T]] of [[[1, 0], CUR.tails[0]], [[0, 1], CUR.tails[1]]].entries()) {
+      el('path', { class: `ax ${T.cls} dim draw`, d: seg([0, 0], [d[0] * L, d[1] * L]), pathLength: 1, 'data-g': `${T.g} cone`,
+                   style: dly(t0 + 1.3 + 0.08 * i, 0.45) }, cone);
+      el('path', { class: `ax ${T.cls} ttail dim fade`, d: seg([d[0] * (L + 4.5), d[1] * (L + 4.5)], [d[0] * (L + 12), d[1] * (L + 12)]),
+                   'data-g': `${T.g} cone`, style: dly(t0 + 1.7) }, cone);
+    }
+    const ray = el('path', { class: 'rray dim', 'data-g': 'radial cone', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1,
+                             d: seg([0, 0], [L, L]) }, cone);
+    const k = Math.SQRT1_2, rayTail = el('g', { opacity: 0 }, cone);
+    el('path', { class: 'rray ttail dim', 'data-g': 'radial cone', d: seg([L + 4.5 * k, L + 4.5 * k], [L + 12 * k, L + 12 * k]) }, rayTail);
+    const [px, py] = MOD.point.map(v => v * L);
+    el('circle', { class: 'tdot dim pop', cx: at(px, py)[0], cy: at(px, py)[1], r: 2.8, 'data-g': 'cone gamma', style: dly(t0 + 1.8) }, cone);
+    el('circle', { class: 'tdot dim pop', cx: at(0, 0)[0], cy: at(0, 0)[1], r: 3, 'data-g': 'cone', style: dly(t0 + 1.6) }, cone);
+
+    // the excess component, which sits on the ridge, lifts off and is killed
+    const ghostG = el('g', {}, g), ghost = el('g', {}, ghostG);
+    const gl = linkOr(ghost, 'ghost'), gd = blobD(MOD.ghost.map(([u, z]) => [u, -z]));
+    const gc = el('g', { 'clip-path': `url(#${id}up)` }, gl);
+    el('path', { class: 'paper fade', d: gd, style: dly(t0 + 1.1) }, gc);
+    el('path', { class: 'exctint fade', d: gd, style: dly(t0 + 1.1) }, gc);
+    el('path', { class: 'blob dim draw', d: gd, pathLength: 1, 'data-g': 'ghost', style: dly(t0 + 0.9, 0.9) }, gc);
+    el('path', { class: 'blob dim draw', d: `M${P(ghostChord[0], 0)}L${P(ghostChord[1], 0)}`, pathLength: 1, 'data-g': 'ghost',
+                 style: dly(t0 + 1.6, 0.3) }, gl);
+    // hidden edges, dashed: the far side of the ridge behind the excess component
+    const hiddenG = el('g', {}, el('g', { class: 'fade', style: dly(t0 + 2.0) }, g));
+    const hidden = el('path', { class: 'ghost dim nohit', 'data-g': 'vzmain' }, hiddenG);
+
+    // labels: M̄₁(ℙⁿ, d), then the Vakil–Zinger space M̃₁(ℙⁿ, d)
+    const labs = linkOr(g, 'vzmain');
+    const nm = acc => [['M', acc], ['1', 'sub'], ['(ℙ', ''], ['n', 'sup'], [', ', ''], ['d', 'i'], [')', '']];
+    const cx = (mainChord[0] + mainChord[1]) / 2;
+    const l0 = panelName(labs, cx, MOD.labelY, nm('bar'), t0 + 2.0, { g: 'vzmain' }),
+          l1 = panelName(labs, cx, MOD.labelY, nm('tilde'), null, { g: 'vzmain' });
+
+    return {
+      blow: s => {                                   // s: the fold rounds off; the ghost lifts
+        const r = MOD.r1 * s, pts = mainPoly.map(([u, w]) => proj(u, w, r)), y0 = proj(0, 0, r)[1];
+        const od = poly(pts, true);
+        [fill, tintNear, outline].forEach(e => e.setAttribute('d', od));
+        tintFar.setAttribute('d', od); hidden.setAttribute('d', od);
+        farClip.setAttribute('y', (y0 - 2000).toFixed(2));
+        const cd = `M${P(mainChord[0] + 3, y0)}L${P(mainChord[1] - 3, y0)}`;
+        crease.setAttribute('d', cd); red.setAttribute('d', cd);
+        creaseG.setAttribute('opacity', (1 - clamp01((s - 0.2) / 0.5)).toFixed(3));
+        redG.setAttribute('opacity', clamp01((s - 0.2) / 0.5).toFixed(3));
+        ghost.setAttribute('transform', `translate(0 ${(y0 - MOD.lift * s).toFixed(2)})`);
+      },
+      ray: p => {
+        ray.setAttribute('stroke-dashoffset', (1 - clamp01(p / 0.85)).toFixed(4));
+        rayTail.setAttribute('opacity', clamp01((p - 0.8) / 0.2).toFixed(3));
+      },
+      fade: f => {
+        ghostG.setAttribute('opacity', (1 - f).toFixed(3));
+        ghostG.setAttribute('transform', `translate(0 ${(-10 * f).toFixed(2)})`);
+        ghostG.style.visibility = f > 0.999 ? 'hidden' : '';
+        hiddenG.setAttribute('opacity', (1 - f).toFixed(3));
+        l0.setAttribute('opacity', (1 - f).toFixed(3)); l1.setAttribute('opacity', f.toFixed(3));
+      },
+    };
+  }
+
+  const LAYOUTS = {
+    wide: { C: [0, 0], G: [252, 0], M: [596, 0], arrow: [[78, 0], [172, 0]], lab: [125, -14], anchor: 'middle', width: 920 },
+    tall: { C: [0, 0], G: [16, 300], M: [0, 590], arrow: [[0, 112], [0, 178]], lab: [14, 150], anchor: 'start' },
+  };
+
+  let STATE = null;
+  function build(name) {
+    const Lyt = LAYOUTS[name];
+    svg.replaceChildren();
+    const at = ([x, y]) => el('g', { transform: `translate(${x} ${y})` }, svg);
+    curvePanel(at(Lyt.C), 0);
+    squiggle(svg, ...Lyt.arrow, 'trop', 'trop gamma', [['trop', '']], Lyt.lab, Lyt.anchor, 1.8);
+    const radial = tropPanel(at(Lyt.G), 2.4);
+    const mod = modPanel(at(Lyt.M), 3.0);
+    STATE = { radial, blow: mod.blow, ray: mod.ray, fade: mod.fade };
+    setState(0, 0, 0);
+    placeTildes();
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    svg.querySelectorAll('.fitme, text, .ghostcomp, .sph, .rarcfit').forEach(n => {
+      const b = n.getBBox(), m = n.getCTM(), r = svg.getCTM();
+      for (const [x, y] of [[b.x, b.y], [b.x + b.width, b.y + b.height]]) {
+        const p = new DOMPoint(x, y).matrixTransform(r.inverse().multiply(m));
+        x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+      }
+    });
+    // the radial-alignment arcs reach a little further than anything else around Γ
+    const [gx, gy] = Lyt.G, reach = Math.max(...GAM.v.map(V => V.len));
+    x1 = Math.max(x1, gx + GAM.core[0] + reach + 4);
+    y0 = Math.min(y0, gy - reach * Math.sin(GAM.arc) - 4); y1 = Math.max(y1, gy + reach * Math.sin(GAM.arc) + 4);
+    // and the excess component lifts above where it starts
+    y0 = Math.min(y0, Lyt.M[1] - Math.max(...MOD.ghost.map(p => p[1])) - MOD.lift - 4);
+    const pad = 12, w = Lyt.width || (x1 - x0 + 2 * pad), cx = (x0 + x1) / 2;
+    svg.setAttribute('viewBox', [cx - w / 2, y0 - pad, w, y1 - y0 + 2 * pad].map(v => v.toFixed(1)).join(' '));
+    svg.querySelectorAll('.fig-link').forEach(a => {
+      a.querySelectorAll('rect.hit').forEach(h => h.remove());
+      a.querySelectorAll('text').forEach(t => {
+        const b = t.getBBox();
+        a.insertBefore(el('rect', { class: 'hit', x: b.x - 8, y: b.y - 8, width: b.width + 16, height: b.height + 16, rx: 8 }), a.firstChild);
+      });
+      wireLink(a);
+    });
+  }
+  function setState(s, r, f) { STATE.radial(r); STATE.ray(r); STATE.blow(s); STATE.fade(f); }
+
+  /* ---------------------------------------------------------------------
+     Animation: CSS draws/fades the first picture; script drives the blowup.
+     --------------------------------------------------------------------- */
+  const TIMES = { blow: [6.0, 1.8], ray: [6.0, 1.4], fade: [8.6, 1.4], end: 10.2,   // [start, duration] in seconds
+                  drawn: 5.6 };                                                      // when the CSS-drawn picture is complete
+  function playIntro() {
+    cancelAnimationFrame(raf); clearTimeout(introTimer);
+    if (reduceMotion()) { svg.classList.remove('intro'); setState(1, 1, 1); return; }
+    svg.classList.remove('intro'); void svg.getBoundingClientRect(); svg.classList.add('intro');
+    setState(0, 0, 0);
+    const start = performance.now();
+    const ph = (t, [a, d]) => clamp01((t - a / SPEED) / (d / SPEED));
+    const step = now => {
+      const t = (now - start) / 1000;
+      setState(ease(ph(t, TIMES.blow)), ph(t, TIMES.ray), ease(ph(t, TIMES.fade)));
+      if (t < TIMES.end / SPEED) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    introTimer = setTimeout(() => svg.classList.remove('intro'), 1000 * TIMES.drawn / SPEED);
+  }
+
+  return {
+    label: 'A genus-one curve whose elliptic component is contracted, with two rational tails; its tropical curve, '
+         + 'with edge lengths l1 and l2; and the moduli space of genus-one stable maps, whose main component is folded '
+         + 'where an excess component of such maps meets it. The Vakil–Zinger blowup orders the tails by distance from the core, '
+         + 'subdividing the cone of edge lengths by a red ray; the fold is rounded off and the excess component is killed.',
+    build, play: playIntro, finish: () => setState(1, 1, 1),
+  };
+}
+
+/* =====================================================================
+   4d. FIGURE D: blowing up a toric surface, its scattering diagram, and broken lines
+   ===================================================================== */
+function scatterFigure() {
+  /* ---------------------------------------------------------------------
+     Geometry (coordinates are local to each panel; y points down)
+     Left: a toric surface (Ȳ, D̄), the boundary a triangle of lines D₁, D₂, D₃. Blowing up a point
+       in the interior of D₁ and one in D₂ (s: 0 → 1) grows the red exceptional curves E₁, E₂.
+     Right: ℝ² with the fan of the triangle drawn faintly (ray ρᵢ for Dᵢ): the trivial scattering
+       diagram. The blowups add the initial walls ℝ·ρ₁, ℝ·ρ₂ (w: 0 → 1); scattering adds the ray
+       between them (c: 0 → 1), giving the consistent five-ray diagram 𝔇. Then two broken lines
+       come in parallel from the left (b: 0 → 1) and reach the wall ℝ≥0·ρ₂: one goes straight on,
+       one bends, and both end at the same point Q.
+     --------------------------------------------------------------------- */
+  const add = (a, b, t = 1) => [a[0] + t * b[0], a[1] + t * b[1]];
+  const unit = ([x, y]) => { const n = Math.hypot(x, y); return [x / n, y / n]; };
+  const lerp2 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  function blobD(pts) {                              // closed Catmull–Rom spline through pts
+    const n = pts.length, q = i => pts[(i + n) % n];
+    let d = 'M' + P(...pts[0]);
+    for (let i = 0; i < n; i++) {
+      const p0 = q(i - 1), p1 = q(i), p2 = q(i + 1), p3 = q(i + 2);
+      d += 'C' + P(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6) + ' '
+               + P(p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6) + ' ' + P(...p2);
+    }
+    return d + 'Z';
+  }
+
+  const SURF = {
+    blob: [[-124, -10], [-106, -66], [-42, -98], [40, -94], [108, -60], [130, 0], [110, 62], [38, 88], [-48, 84], [-110, 52]],
+    corner: { c12: [-78, 50], c23: [88, 50], c31: [4, -80] },     // the corners Dᵢ ∩ Dⱼ
+    tail: 13,                                                    // how far each line runs past a corner
+    // Dᵢ runs between two corners; a label; its colour; the point blown up on it (as a fraction along it)
+    D: [{ from: 'c12', to: 'c31', g: 'dA', key: 'd1', lab: [-58, -38], anchor: 'end', blow: 0.62, elab: [10, -4], eanchor: 'start' },
+        { from: 'c12', to: 'c23', g: 'dB', key: 'd2', lab: [-30, 76], anchor: 'middle', blow: 0.6, elab: [10, 2], eanchor: 'start' },
+        { from: 'c23', to: 'c31', g: 'dC', key: 'd3', lab: [70, -24], anchor: 'start' }],
+    E: { inside: 30, outside: 10, bow: 4 },          // the exceptional curves: lengths into and out of the triangle
+    labelY: 130,
+  };
+  const DIAG = {
+    R: 86,                                           // radius to which rays are drawn
+    fan: [{ v: [1, 0], g: 'dA' }, { v: [0, 1], g: 'dB' }, { v: [-1, -1], g: 'dC' }],   // ρ₁, ρ₂, ρ₃ (y up)
+    walls: [[1, 0], [0, 1]],                         // the initial walls are the lines ℝ·ρ₁ and ℝ·ρ₂
+    out: [1, 1],                                     // the ray created by scattering
+    Q: [20, 48],                                     // where both broken lines end (y up)
+    labelY: 130,
+  };
+  const scr = ([x, y]) => [x, -y];                   // a point of ℝ² (y up) on screen
+
+  /* ---------------------------------------------------------------------
+     Building the SVG
+     --------------------------------------------------------------------- */
+  const linkOr = (parent, key, light = key) => SLOTS[key] ? figLink(parent, key, light) : el('g', {}, parent);
+  function panelName(parent, x, y, parts, d, { cls = 'name', g, anchor } = {}) {
+    const outer = el('g', { class: d == null ? '' : 'fade', style: d == null ? null : dly(d) }, parent);
+    const inner = el('g', {}, outer);
+    mathText(inner, x, y, parts, { cls, g, anchor });
+    return inner;
+  }
+  const drawn = (parent, attrs) => el('path', { ...attrs, pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 }, parent);
+  const setDraw = (e, p) => e.setAttribute('stroke-dashoffset', (1 - clamp01(p)).toFixed(4));
+  let clipN = 0;
+
+  // ---- the surface ----
+  function surfacePanel(g, t0) {
+    const id = 'tsclip' + (clipN++);
+    el('path', { d: blobD(SURF.blob) }, el('clipPath', { id }, g));
+    const X = linkOr(g, 'tsurf');
+    el('path', { class: 'blobfill fade fitme', d: blobD(SURF.blob), style: dly(t0 + 0.3) }, X);
+    el('path', { class: 'blob dim draw', d: blobD(SURF.blob), pathLength: 1, 'data-g': 'tsurf', style: dly(t0, 1.0) }, X);
+    const pr = (key, parts) => panelName(X, 0, SURF.labelY, parts, key, { g: 'tsurf' });
+    const n0 = pr(t0 + 1.6, [['(', ''], ['Y', 'i bar'], [', ', ''], ['D', 'i bar'], [')', '']]);
+    const n1 = pr(null, [['(', ''], ['Y', 'i'], [', ', ''], ['D', 'i'], [')', '']]);
+
+    const C = SURF.corner, blows = [], dl = [];
+    for (const [i, D] of SURF.D.entries()) {
+      const a = C[D.from], b = C[D.to], u = unit([b[0] - a[0], b[1] - a[1]]);
+      const L = linkOr(g, D.key, D.g), inside = el('g', { 'clip-path': `url(#${id})` }, L);
+      const d = `M${P(...add(a, u, -SURF.tail))}L${P(...add(b, u, SURF.tail))}`;
+      el('path', { class: 'hitline', d }, inside);
+      el('path', { class: `dcurve ${D.g} dim draw`, d, pathLength: 1, 'data-g': D.g, style: dly(t0 + 0.6 + 0.15 * i, 0.6) }, inside);
+      const sub = String(i + 1), o = { cls: D.g, g: D.g, anchor: D.anchor };
+      dl.push([panelName(L, ...D.lab, [['D', 'i bar'], [sub, 'sub']], t0 + 1.4 + 0.1 * i, o),
+               panelName(L, ...D.lab, [['D', 'i'], [sub, 'sub']], null, o)]);
+      if (D.blow != null) blows.push({ p: lerp2(a, b, D.blow), u, i, elab: D.elab, eanchor: D.eanchor });
+    }
+    const dots = el('g', { class: 'nohit' }, g);
+    for (const c of Object.values(C)) el('circle', { class: 'pt dim pop', cx: c[0], cy: c[1], r: 3.2, style: dly(t0 + 1.4) }, dots);
+
+    // the exceptional curves, and the points they replace
+    const EL = linkOr(g, 'excs', 'excs');
+    for (const B of blows) {
+      const nIn = [B.u[1], -B.u[0]];                 // the side of Dᵢ facing into the triangle
+      const cen = [(C.c12[0] + C.c23[0] + C.c31[0]) / 3, (C.c12[1] + C.c23[1] + C.c31[1]) / 3];
+      const sgn = Math.sign((cen[0] - B.p[0]) * nIn[0] + (cen[1] - B.p[1]) * nIn[1]) || 1, n = [nIn[0] * sgn, nIn[1] * sgn];
+      const curve = t => add(add(B.p, n, t), B.u, SURF.E.bow * (t / SURF.E.inside) ** 2);
+      B.full = []; for (let k = 0; k <= 16; k++) B.full.push(curve(-SURF.E.outside + (SURF.E.inside + SURF.E.outside) * k / 16));
+      B.hit = el('path', { class: 'hitline' }, EL);
+      B.el = el('path', { class: 'ecurve dim', 'data-g': 'excs' }, EL);
+      B.dot = el('circle', { class: 'pt dim nohit', cx: B.p[0], cy: B.p[1], r: 0 }, dots);
+      const tip = curve(SURF.E.inside);
+      B.lab = panelName(EL, tip[0] + B.elab[0], tip[1] + B.elab[1], [['E', 'i'], [String(B.i + 1), 'sub']], null,
+                        { cls: 'exc', g: 'excs', anchor: B.eanchor });
+    }
+
+    return s => {                                    // s: the blowups
+      const k = clamp01((s - 0.4) / 0.5);
+      n0.setAttribute('opacity', (1 - k).toFixed(3)); n1.setAttribute('opacity', k.toFixed(3));
+      dl.forEach(([a, b]) => { a.setAttribute('opacity', (1 - k).toFixed(3)); b.setAttribute('opacity', k.toFixed(3)); });
+      const appear = clamp01(s / 0.25), grow = clamp01((s - 0.3) / 0.7);
+      for (const B of blows) {
+        B.dot.setAttribute('r', (3.6 * appear * (1 - grow)).toFixed(2));
+        const d = grow <= 0.004 ? '' : poly(B.full.map(q => lerp2(B.p, q, grow)));
+        B.el.setAttribute('d', d); B.hit.setAttribute('d', d);
+        B.lab.setAttribute('opacity', clamp01((grow - 0.6) / 0.4).toFixed(3));
+      }
+      EL.style.visibility = grow > 0.05 ? '' : 'hidden';
+    };
+  }
+
+  // ---- ℝ², the scattering diagram, and the broken lines ----
+  function diagramPanel(g, t0) {
+    const R = DIAG.R, O = [0, 0];
+    const ray = (parent, v, cls, gname, len = R) => {
+      const u = unit(v), end = scr([u[0] * len, u[1] * len]);
+      return { u, end, tail: `M${P(...scr([u[0] * (len + 5), u[1] * (len + 5)]))}L${P(...scr([u[0] * (len + 14), u[1] * (len + 14)]))}` };
+    };
+    // the fan, faint: the tropicalisation of the toric surface
+    const fanL = linkOr(g, 'fan', 'fan');
+    for (const [i, F] of DIAG.fan.entries()) {
+      const r = ray(fanL, F.v);
+      el('path', { class: 'hitline', d: `M${P(...O)}L${P(...r.end)}` }, fanL);
+      el('path', { class: `fanray ${F.g} dim fade`, d: `M${P(...O)}L${P(...r.end)}`, 'data-g': `${F.g} fan`,
+                   style: dly(t0 + 0.12 * i) }, fanL);
+    }
+    // the walls: drawn by script
+    const scat = linkOr(g, 'scat', 'scat'), walls = [];
+    for (const v of DIAG.walls) for (const sgn of [1, -1]) {
+      const r = ray(scat, [v[0] * sgn, v[1] * sgn]);
+      const hit = el('path', { class: 'hitline', d: `M${P(...O)}L${P(...r.end)}` }, scat);
+      const w = drawn(scat, { class: 'wall dim', d: `M${P(...O)}L${P(...r.end)}`, 'data-g': 'scat' });
+      const tg = el('g', { opacity: 0 }, scat);
+      el('path', { class: 'wall ttail dim', d: r.tail, 'data-g': 'scat' }, tg);
+      walls.push({ w, tg, hit });
+    }
+    const ro = ray(scat, DIAG.out);
+    const outHit = el('path', { class: 'hitline', d: `M${P(...O)}L${P(...ro.end)}` }, scat);
+    const outW = drawn(scat, { class: 'wall dim', d: `M${P(...O)}L${P(...ro.end)}`, 'data-g': 'scat' });
+    const outT = el('g', { opacity: 0 }, scat);
+    el('path', { class: 'wall ttail dim', d: ro.tail, 'data-g': 'scat' }, outT);
+    el('circle', { class: 'tdot dim pop nohit', cx: 0, cy: 0, r: 3.2, style: dly(t0 + 0.3) }, g);
+
+    // the broken lines: in parallel from the left, across the wall ℝ≥0·ρ₂; one straight on, one bent
+    const BL = linkOr(g, 'blines', 'blines');
+    const [qx, qy] = DIAG.Q, Q = scr(DIAG.Q);
+    const hitS = scr([0, qy]), hitB = scr([0, qy + qx]);          // the bent one meets the wall higher up
+    for (const [p0, p1] of [[scr([-R, qy]), hitS], [scr([-R, qy + qx]), hitB], [hitS, Q], [hitB, Q]])
+      el('path', { class: 'hitline', d: `M${P(...p0)}L${P(...p1)}` }, BL);
+    const inS = drawn(BL, { class: 'bline dim', d: `M${P(...scr([-R, qy]))}L${P(...hitS)}`, 'data-g': 'blines' });
+    const inB = drawn(BL, { class: 'bline dim', d: `M${P(...scr([-R, qy + qx]))}L${P(...hitB)}`, 'data-g': 'blines' });
+    const tails = el('g', { opacity: 0 }, BL);
+    for (const y of [qy, qy + qx])
+      el('path', { class: 'bline ttail dim', d: `M${P(...scr([-R - 14, y]))}L${P(...scr([-R - 5, y]))}`, 'data-g': 'blines' }, tails);
+    // arrowheads halfway along the incoming parts, showing the direction of travel
+    const arrows = el('g', { opacity: 0 }, BL);
+    for (const y of [qy, qy + qx]) {
+      const [ax, ay] = scr([-R * 0.45, y]);
+      el('path', { class: 'barrow dim', 'data-g': 'blines', d: `M${P(ax - 4, ay - 5)}L${P(ax + 5, ay)}L${P(ax - 4, ay + 5)}Z` }, arrows);
+    }
+    const outS = drawn(BL, { class: 'bline dim', d: `M${P(...hitS)}L${P(...Q)}`, 'data-g': 'blines' });
+    const outB = drawn(BL, { class: 'bline dim', d: `M${P(...hitB)}L${P(...Q)}`, 'data-g': 'blines' });
+    const bend = el('circle', { class: 'tdot dim nohit', cx: hitB[0], cy: hitB[1], r: 0 }, BL);
+    const qDot = el('circle', { class: 'tdot dim', cx: Q[0], cy: Q[1], r: 0, 'data-g': 'blines' }, BL);
+    const qLab = panelName(BL, Q[0] + 9, Q[1] - 5, [['Q', 'i']], null, { cls: '', g: 'blines', anchor: 'start' });
+
+    const nm0 = linkOr(g, 'fan', 'fan'), nm1 = linkOr(g, 'scat', 'scat');
+    const m0 = panelName(nm0, 0, DIAG.labelY, [['ℝ', ''], ['2', 'sup']], t0 + 0.6, { g: 'fan' });
+    const m1 = panelName(nm1, 0, DIAG.labelY, [['𝔇', '']], null, { g: 'scat' });
+
+    return {
+      walls: p => walls.forEach(W => { setDraw(W.w, p / 0.85); W.tg.setAttribute('opacity', clamp01((p - 0.8) / 0.2).toFixed(3)); }),
+      scatter: p => {
+        setDraw(outW, p / 0.85); outT.setAttribute('opacity', clamp01((p - 0.8) / 0.2).toFixed(3));
+        m0.setAttribute('opacity', (1 - clamp01(p)).toFixed(3)); m1.setAttribute('opacity', clamp01(p).toFixed(3));
+        nm0.style.visibility = p < 0.5 ? '' : 'hidden'; nm1.style.visibility = p >= 0.5 ? '' : 'hidden';
+        outHit.style.display = p > 0.5 ? '' : 'none';
+      },
+      lines: p => {                                  // first the incoming parts, then the two choices
+        const a = clamp01(p / 0.45), b = clamp01((p - 0.45) / 0.4), c = clamp01((p - 0.85) / 0.15);
+        setDraw(inS, a); setDraw(inB, a); tails.setAttribute('opacity', a > 0 ? '1' : '0');
+        arrows.setAttribute('opacity', clamp01((a - 0.5) / 0.15).toFixed(3));
+        setDraw(outS, b); setDraw(outB, b);
+        bend.setAttribute('r', (b > 0 ? 2.6 : 0).toFixed(1));
+        qDot.setAttribute('r', (3.6 * c).toFixed(2)); qLab.setAttribute('opacity', c.toFixed(3));
+        BL.style.visibility = p > 0.02 ? '' : 'hidden';
+      },
+      hideScat: w => { scat.style.visibility = w > 0.02 ? '' : 'hidden'; walls.forEach(W => { W.hit.style.display = w > 0.5 ? '' : 'none'; }); },
+    };
+  }
+
+  const LAYOUTS = {
+    wide: { S: [0, 0], D: [330, 0], width: 760 },
+    tall: { S: [0, 0], D: [0, 290] },
+  };
+
+  let STATE = null;
+  function build(name) {
+    const Lyt = LAYOUTS[name];
+    svg.replaceChildren();
+    const at = ([x, y]) => el('g', { transform: `translate(${x} ${y})` }, svg);
+    const blow = surfacePanel(at(Lyt.S), 0);
+    const diag = diagramPanel(at(Lyt.D), 1.8);
+    STATE = { blow, ...diag };
+    setState(0, 0, 0, 0);
+    placeTildes();
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    svg.querySelectorAll('.fitme, text').forEach(n => {
+      const b = n.getBBox(), m = n.getCTM(), r = svg.getCTM();
+      for (const [x, y] of [[b.x, b.y], [b.x + b.width, b.y + b.height]]) {
+        const p = new DOMPoint(x, y).matrixTransform(r.inverse().multiply(m));
+        x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+      }
+    });
+    // the walls and broken lines reach a little beyond the fan
+    const [dx, dy] = Lyt.D, R = DIAG.R + 16;
+    x0 = Math.min(x0, dx - R); x1 = Math.max(x1, dx + R); y0 = Math.min(y0, dy - R); y1 = Math.max(y1, dy + R);
+    const pad = 12, w = Lyt.width || (x1 - x0 + 2 * pad), cx = (x0 + x1) / 2;
+    svg.setAttribute('viewBox', [cx - w / 2, y0 - pad, w, y1 - y0 + 2 * pad].map(v => v.toFixed(1)).join(' '));
+    svg.querySelectorAll('.fig-link').forEach(a => {
+      a.querySelectorAll('rect.hit.lab-hit').forEach(h => h.remove());
+      a.querySelectorAll('text').forEach(t => {
+        const b = t.getBBox();
+        a.insertBefore(el('rect', { class: 'hit lab-hit', x: b.x - 8, y: b.y - 8, width: b.width + 16, height: b.height + 16, rx: 8 }), a.firstChild);
+      });
+      wireLink(a);
+    });
+  }
+  function setState(s, w, c, b) {
+    STATE.blow(s); STATE.walls(w); STATE.scatter(c); STATE.lines(b); STATE.hideScat(w);
+  }
+
+  /* ---------------------------------------------------------------------
+     Animation: CSS draws/fades the first picture; script drives the rest.
+     --------------------------------------------------------------------- */
+  const TIMES = { blow: [4.4, 1.8], walls: [5.4, 1.2], scatter: [7.0, 1.0], lines: [8.4, 2.2], end: 10.8,   // [start, duration] in seconds
+                  drawn: 3.0 };                                                                          // when the CSS-drawn picture is complete
+  function playIntro() {
+    cancelAnimationFrame(raf); clearTimeout(introTimer);
+    if (reduceMotion()) { svg.classList.remove('intro'); setState(1, 1, 1, 1); return; }
+    svg.classList.remove('intro'); void svg.getBoundingClientRect(); svg.classList.add('intro');
+    setState(0, 0, 0, 0);
+    const start = performance.now();
+    const ph = (t, [a, d]) => clamp01((t - a / SPEED) / (d / SPEED));
+    const step = now => {
+      const t = (now - start) / 1000;
+      setState(ease(ph(t, TIMES.blow)), ph(t, TIMES.walls), ph(t, TIMES.scatter), ph(t, TIMES.lines));
+      if (t < TIMES.end / SPEED) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    introTimer = setTimeout(() => svg.classList.remove('intro'), 1000 * TIMES.drawn / SPEED);
+  }
+
+  return {
+    label: 'A toric surface whose boundary is a triangle of three lines, next to the plane with the trivial scattering diagram. '
+         + 'Blowing up a point on each of two of the lines adds two red exceptional curves, and two initial walls in the plane; '
+         + 'scattering them adds a third ray, giving a consistent diagram with five rays. Two broken lines come in parallel and '
+         + 'cross a wall, one going straight on and one bending, and both end at the same point.',
+    build, play: playIntro, finish: () => setState(1, 1, 1, 1),
+  };
+}
+
+/* =====================================================================
    5. HOVER: light up the pieces that correspond to the hovered label
    (D_j ↔ its vanishing cycles ↔ nodes on it ↔ edges of Γ over it; x_i ↔ vertex and leg)
    ===================================================================== */
@@ -1252,11 +1892,15 @@ document.querySelectorAll('[data-panel]').forEach(a => a.addEventListener('click
   e.preventDefault(); openPanel(a.dataset.panel, a);
 }));
 
-// Which figure: the blowup with probability BLOWUP_ODDS, otherwise the degeneration.
-// …/?fig=degeneration or …/?fig=blowup shows that one.
-const FIGURES = { degeneration: degenerationFigure, blowup: blowupFigure };
+// Which figure: chosen at random with the probabilities in ODDS.
+// …/?fig=degeneration, …/?fig=blowup, …/?fig=vz or …/?fig=scatter shows that one.
+const FIGURES = { degeneration: degenerationFigure, blowup: blowupFigure, vz: vzFigure, scatter: scatterFigure };
 const asked = new URLSearchParams(location.search).get('fig');
-const figName = FIGURES[asked] ? asked : (Math.random() < BLOWUP_ODDS ? 'blowup' : 'degeneration');
+const figName = FIGURES[asked] ? asked : (() => {
+  let r = Math.random();
+  for (const [name, p] of Object.entries(ODDS)) if ((r -= p) < 0) return name;
+  return 'degeneration';
+})();
 const FIG = FIGURES[figName]();
 svg.setAttribute('aria-label', FIG.label);
 document.querySelectorAll('#caption .default').forEach(s => { s.hidden = s.dataset.fig !== figName; });

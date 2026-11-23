@@ -80,7 +80,7 @@ STUDENTS = {
         'Younghan Bae', 'Benjamin Bakker', 'Ignacio Barros', 'Tim-Henrik Buelles', 'Alessio Cela', 'Yaim Cooper',
         'Tom Graber|Thomas Graber', 'Felix Janda', 'Davesh Maulik', 'Miguel Moreira', 'Georg Oberdieck',
         'Aaron Pixton', 'Christoph Schiessl', 'Johannes Schmitt', 'Iman Setayesh', 'Junliang Shen',
-        'Vivek Shende', 'Aitor Iribar López', 'Lycka Drakengren',
+        'Vivek Shende', 'Aitor Iribar López', 'Lycka Drakengren', 'Jeremy Feusi',
     ],
     'Dan Abramovich': [
         'Kenneth Ascher', 'Dori Bejleri', 'Jiun-Cheng Chen', 'Qile Chen', 'Tangli Ge', 'Noah Giansiracusa',

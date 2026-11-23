@@ -42,8 +42,15 @@ TOPICS = [
     (r'quantum (cohomology|k-theory|period)', 3), (r'givental|\b[ij]-function', 2), (r'degeneration formula', 3),
     (r'severi variet|welschinger', 2), (r'psi[- ]class|hodge (integral|bundle)|lambda_g', 2),
     # logarithmic and orbifold geometry
-    (r'(log|logarithmic) (gromov|stable map|map|curve|geometry|structure|scheme|smooth|modification|blow)', 3),
-    (r'punctured (gromov|invariant|map|curve)', 4), (r'artin fan', 3), (r'root stacks?', 3), (r'orbifold (gromov|curve|map)', 3),
+    (r'\b(log|logarithmic) (gromov|stable map|map|curve|geometry|structure|scheme|smooth|modification|blow|chow|'
+     r'intersection|tangent|cotangent|stack|picard|jacobian|deformation|moduli|enumerat|invariant|point|morphism|'
+     r'(double ramification|dr) cycle|tropical)', 4),
+    (r'fine and saturated|\bfs (log|monoid)', 3),
+    (r'punctured (gromov|invariant|map|curve|log)', 4), (r'artin fans?', 4),
+    (r'(multi-?)?root (stacks?|constructions?)|rooted (along|at)', 4),
+    (r'twisted (stable |prestable )?(maps?|curves?)', 4), (r'orbifold (gromov|curve|map|stable|invariant)', 4),
+    (r'relative (gromov|stable maps?|invariants?|maps?)', 3), (r'expanded (degeneration|target)', 3), (r'\brubber\b', 2),
+    (r'tangency (condition|order)|maximal (contact|tangency)|contact orders?', 3),
     (r'naive (space|theor|invariant)', 2), (r'normal crossings?', 1), (r'snc (pair|divisor)', 2),
     # mirror symmetry and the Gross–Siebert programme
     (r'gross-siebert', 4), (r'mirror symmetry|\bmirrors? (of|for|to|construction|famil)', 3), (r'intrinsic mirror', 4),

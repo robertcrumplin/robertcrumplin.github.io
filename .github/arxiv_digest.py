@@ -74,7 +74,7 @@ AUTHORS = [
 ]
 # PhD students, past and present, of some of the people above; also always listed, marked "student of …".
 # Left out because the name is too common to match safely: Yu Wang (Gross), Jianhua Wang and James Spencer
-# (Abramovich).
+# (Abramovich), Mohammad Akhtar (Corti and Coates).
 STUDENTS = {
     'Rahul Pandharipande': [
         'Younghan Bae', 'Benjamin Bakker', 'Ignacio Barros', 'Tim-Henrik Buelles', 'Alessio Cela', 'Yaim Cooper',
@@ -100,6 +100,14 @@ STUDENTS = {
         'Qaasim Shafi', 'Patrick Kennedy-Hunt', 'Siddarth Kannan', 'Wanlong Zheng', 'Ajith Urundolil Kumaran',
         'Terry Dekun Song|Terry Song|Dekun Song', 'Siao Chi Mok', 'Owen Mackenzie', 'Emily Dodwell',
         'Sae Koyama', 'Ray Shang',
+    ],
+    'Alessio Corti': [
+        'Alessandro Chiodo', 'Giulia Gugiatti', 'Paul Hacking', 'Anne-Sophie Kaloghiros', 'Vladimir Lazić',
+        'Andrew Macpherson', 'Andrea Petracci', 'Thomas Prince|Tom Prince', 'Andrew Strangeway',
+    ],
+    'Tom Coates': [
+        'Giulia Gugiatti', 'Elana Kalashnikov', 'Navid Nabijou', 'Thomas Prince|Tom Prince', 'Qaasim Shafi',
+        'Andrew Strangeway',
     ],
     # Sam Johnston and Soham Karwa: no students yet.
 }
@@ -161,18 +169,20 @@ def name_key(s):
 
 
 def follow_list():
-    """(pattern, advisor or None) for every followed name and spelling; people followed directly come first."""
-    out, direct = [], set()
+    """(pattern, advisors) for every followed name and spelling; advisors is empty for people followed directly."""
+    found = {}
     for entry in AUTHORS:
         for spelling in entry.split('|'):
-            out.append((name_key(spelling), None))
-            direct.add(name_key(spelling))
+            found[name_key(spelling)] = None
     for advisor, students in STUDENTS.items():
         for entry in students:
             for spelling in entry.split('|'):
-                if name_key(spelling) not in direct:
-                    out.append((name_key(spelling), advisor))
-    return [(re.compile(r'(^| )' + re.escape(k) + r'( |$)'), adv) for k, adv in out]
+                key = name_key(spelling)
+                if key not in found:
+                    found[key] = []
+                if found[key] is not None and advisor not in found[key]:
+                    found[key].append(advisor)
+    return [(re.compile(r'(^| )' + re.escape(k) + r'( |$)'), adv or []) for k, adv in found.items()]
 
 
 FOLLOWED = follow_list()
@@ -184,12 +194,12 @@ def followed_authors(authors):
     for a in re.split(r',|\band\b', authors):
         a = a.strip()
         key = name_key(a)
-        for rx, advisor in FOLLOWED:
+        for rx, advisors in FOLLOWED:
             if key and rx.search(key):
                 if a not in people:
                     people.append(a)
-                    if advisor:
-                        notes.append(f'{a} is a student of {advisor.split()[-1]}')
+                    if advisors:
+                        notes.append(f'{a} is a student of ' + ' and '.join(x.split()[-1] for x in advisors))
                 break
     return people, notes
 

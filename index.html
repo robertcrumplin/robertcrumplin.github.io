@@ -74,6 +74,7 @@
   footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 1.5rem 1rem 2rem; }
   footer a { color: inherit; text-underline-offset: 2px; }
   footer a:hover { color: var(--ink); }
+  #door { -webkit-user-select: none; user-select: none; touch-action: manipulation; padding: .5rem .25rem; margin: -.5rem -.25rem; }
 
   /* ---------- the figure ---------- */
   .fig { display: block; width: 100%; height: auto; overflow: visible; }
@@ -265,7 +266,7 @@
 </section>
 
 <nav class="textnav" id="textnav" aria-label="Pages"></nav>
-<footer>© 2026 Robert Crumplin · Website animation inspired by <a href="https://plei99.github.io/">Patrick Lei</a></footer>
+<footer><span id="door">©</span> 2026 Robert Crumplin · Website animation inspired by <a href="https://plei99.github.io/">Patrick Lei</a></footer>
 
 <dialog id="panel" aria-label="Page">
   <button class="panel-close" type="button" aria-label="Close">×</button>
@@ -1934,6 +1935,19 @@ if (PAGES[startKey] && document.getElementById('page-' + startKey)) {
   } catch { noHistory = true; }
   openPanel(startKey, null, { animate: false, push: false });
 }
+})();
+
+// The © in the footer opens the unlisted arXiv digest, but only after three quick clicks or taps,
+// so nobody lands there by accident. It is not a link, so it looks and behaves like plain text.
+(() => {
+  const door = document.getElementById('door');
+  if (!door) return;
+  let taps = [];
+  door.addEventListener('pointerup', () => {
+    const now = Date.now();
+    taps = taps.filter(t => now - t < 1200).concat(now);
+    if (taps.length >= 3) { taps = []; location.href = '/' + ['arxiv', '1bhec9p544'].join('-') + '/'; }
+  });
 })();
 </script>
 </body>

@@ -1,11 +1,15 @@
-# Every morning: read the day's arXiv announcements, update the unlisted digest page
+# On each arXiv announcement day: read the day's new papers, update the unlisted digest page
 # (arxiv-1bhec9p544/), commit it, and ask GitHub Pages to republish the site.
 # Run it by hand from the Actions tab with "Run workflow".
 name: arXiv digest
 
 on:
   schedule:
-    - cron: '41 5 * * *'   # 05:41 UTC daily, after arXiv refreshes its feeds (about 05:00 UTC)
+    # arXiv announces new papers Sunday to Thursday at 20:00 US Eastern time, and its feeds update at
+    # midnight Eastern (05:00 UTC; 04:00 UTC in summer), so Monday to Friday mornings in UTC.
+    # First try just after that, then a few retries the same morning in case arXiv is late
+    # (as on 24 Nov 2026). Once the day's digest is done, the retries change nothing.
+    - cron: '11 5,7,10,14 * * 1-5'
   workflow_dispatch:
 
 permissions:

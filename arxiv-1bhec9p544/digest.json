@@ -1,6 +1,156 @@
 {
  "days": [
   {
+   "date": "2026-11-24",
+   "total": 265,
+   "papers": [
+    {
+     "id": "2611.30566",
+     "kind": "new",
+     "title": "Virasoro operators for relative Gromov--Witten theory",
+     "authors": "Shuai Guo, Longting Wu, Lei You",
+     "categories": [
+      "math.AG",
+      "math-ph",
+      "math.MP"
+     ],
+     "score": 18,
+     "tags": [
+      "gromov-witten",
+      "relative gromov",
+      "degeneration formula"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "Let $D$ be a smooth divisor in a smooth projective variety $X$. We construct relative Virasoro operators acting on the relative descendant potential of $(X,D)$. Each operator is the logarithmic Virasoro operator of $(X,D)$ plus a boundary correction determined only by $D$ and its normal bundle in $X$."
+    },
+    {
+     "id": "2611.30975",
+     "kind": "new",
+     "title": "Equivariant Localization for $K(n)$-Local Gromov-Witten Invariants with Applications to Gopakumar-Vafa Invariants",
+     "authors": "Guangxi Yan",
+     "categories": [
+      "math.SG",
+      "math.AT"
+     ],
+     "score": 17,
+     "tags": [
+      "gromov-witten",
+      "gopakumar-vafa",
+      "calabi-yau",
+      "genus-zero"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "For certain complex-oriented $K(n)$-local cohomology theories, we establish equivariant localization formulas for global Kuranishi charts and a Riemann-Roch formula."
+    },
+    {
+     "id": "2611.30327",
+     "kind": "new",
+     "title": "Tropical limits of holomorphic linking for toric hypersurfaces and points",
+     "authors": "Yuguang Zhang",
+     "categories": [
+      "math.AG"
+     ],
+     "score": 9,
+     "tags": [
+      "logarithmic point",
+      "tropical",
+      "toric"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "A holomorphic top form on a smooth hypersurface in a smooth projective toric variety has a unique meromorphic residue lift when the ambient dimension is at least two. Evaluating this lift at a point, relative to the logarithmic volume form, gives a complex linking number."
+    },
+    {
+     "id": "2611.28464",
+     "kind": "new",
+     "title": "Spaces of ratios of schemes and \\'etale cohomology",
+     "authors": "Kazuya Kato, Chikara Nakayama, Sampei Usui",
+     "categories": [
+      "math.AG"
+     ],
+     "score": 5,
+     "tags": [
+      "log scheme"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "We introduce the arithmetic topologies on the spaces of ratios for log schemes and prove the basic properties of their cohomologies."
+    },
+    {
+     "id": "2611.30234",
+     "kind": "new",
+     "title": "Rank-Two Attractors and Modularity for a Mirror Bicubic",
+     "authors": "Yibing Chen, Emanuel Scheidegger",
+     "categories": [
+      "math.AG",
+      "hep-th",
+      "math.NT"
+     ],
+     "score": 5,
+     "tags": [
+      "mirror famil",
+      "calabi-yau"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "We study the mirror family $\\mathcal X_\\lambda$ of the bicubic Calabi-Yau threefold, obtained from a family of complete intersections of two cubics in $\\mathbb P^5$. We show that the four-dimensional weight-three Hodge structure of the fibers over $\\lambda^6 = -8$ splits into two rational rank-two pieces of Hodge types $(1,0,0,1)$ and $(0,1,1,0)$; in particular, these points are rank-two attractor points."
+    },
+    {
+     "id": "2611.31124",
+     "kind": "new",
+     "title": "Euler Characteristics of Perverse Sheaves on Complex Ball Quotients",
+     "authors": "Mert Akdenizli, Soheil Memariansorkhabi",
+     "categories": [
+      "math.AG"
+     ],
+     "score": 5,
+     "tags": [
+      "logarithmic cotangent"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "Let $X=\\Gamma\\backslash\\mathbb{B}^n$ be a finite-volume complex ball quotient with neat lattice. We prove that every nonzero algebraically constructible perverse sheaf on $X$ has positive Euler characteristic."
+    },
+    {
+     "id": "2611.29308",
+     "kind": "new",
+     "title": "A Determinant Proof of the Sun--Yang--Zuo Conjecture",
+     "authors": "Jinbang Yang",
+     "categories": [
+      "math.AG",
+      "math.AC",
+      "math.RA"
+     ],
+     "score": 4,
+     "tags": [
+      "syz"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "We give an elementary proof of the determinant identity in \\cite[Conjecture~A.1]{SYZ} over any field of odd characteristic $p$. The proof computes the determinant of a single linear map by dividing by two different monic polynomials. By \\cite[Proposition~A.9]{SYZ}, the identity gives another proof of the Sun--Yang--Zuo conjecture."
+    },
+    {
+     "id": "2611.29490",
+     "kind": "new",
+     "title": "Combinatorics of equivariant blowups of spherical varieties",
+     "authors": "Daniil Shunin",
+     "categories": [
+      "math.AG"
+     ],
+     "score": 4,
+     "tags": [
+      "blowups",
+      "toric"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "We explicitly describe the colored fan of the blowup of a smooth spherical variety $X$ along a smooth irreducible $G$-stable subvariety $Y$. The answer is expressed in terms of the colored cone of $Y$ and the localization of the valuation cone at $Y$, and generalizes the star subdivision of fans of toric varieties. We also consider several examples illustrating the main result."
+    }
+   ]
+  },
+  {
    "date": "2026-11-23",
    "total": 119,
    "papers": [

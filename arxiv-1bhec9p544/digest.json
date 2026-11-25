@@ -1,6 +1,69 @@
 {
  "days": [
   {
+   "date": "2026-11-25",
+   "total": 173,
+   "papers": [
+    {
+     "id": "2611.31552",
+     "kind": "new",
+     "title": "On the unirationality of anticanonical weighted complete intersection surfaces: the infinite families",
+     "authors": "Giulia Gugiatti, Alex Massarenti",
+     "categories": [
+      "math.AG",
+      "math.NT"
+     ],
+     "score": 7,
+     "tags": [],
+     "people": [
+      "Giulia Gugiatti"
+     ],
+     "notes": [
+      "Giulia Gugiatti is a student of Corti and Coates"
+     ],
+     "snippet": "Anticanonical weighted complete intersection surfaces fall into finitely many sporadic families and four infinite families. We prove that the anticanonical surfaces lying in the infinite families are unirational over their field of definition. Over a Hilbertian field, we further prove that a Hilbert subset of members consists of nonrational surfaces."
+    },
+    {
+     "id": "2611.32571",
+     "kind": "new",
+     "title": "Theta Functions and Intrinsic Mirrors of Laurent Phenomenon Algebras",
+     "authors": "Jiarui Fei",
+     "categories": [
+      "math.AG",
+      "math.AC",
+      "math.CO"
+     ],
+     "score": 17,
+     "tags": [
+      "intrinsic mirror",
+      "mirrors of",
+      "theta functions"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "We construct bases of upper Laurent phenomenon algebras over a field by minimizing Newton polytopes in a single seed. For any translation-invariant total order on the exponents, each least exponent $a$ that occurs determines a smallest Newton polytope $Q_a$. Choose one element with Newton polytope $Q_a$ and least term $x^a$ for each such $a$. These elements form a basis."
+    },
+    {
+     "id": "2611.32597",
+     "kind": "new",
+     "title": "Uniform Algebraic Degeneracy of Entire Curves into Complex Projective Varieties",
+     "authors": "Xianjing Dong, Yanda Lv",
+     "categories": [
+      "math.AG",
+      "math.CV"
+     ],
+     "score": 8,
+     "tags": [
+      "logarithmic cotangent",
+      "contact orders"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "This paper is devoted to the algebraic degeneracy of entire curves intersecting a simple-normal-crossing divisor on smooth projective varieties over C, within the logarithmic Green-Griffiths-Lang program."
+    }
+   ]
+  },
+  {
    "date": "2026-11-24",
    "total": 265,
    "papers": [

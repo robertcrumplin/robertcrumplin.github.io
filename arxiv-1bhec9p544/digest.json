@@ -1,6 +1,51 @@
 {
  "days": [
   {
+   "date": "2026-11-26",
+   "total": 142,
+   "papers": [
+    {
+     "id": "2611.34594",
+     "kind": "new",
+     "title": "Genus one mirror symmetry and surfaces with trivial first Chern class",
+     "authors": "Gabriel Ab\\'anades-Joglar, Dennis Eriksson",
+     "categories": [
+      "math.AG",
+      "math-ph",
+      "math.MP",
+      "math.SP"
+     ],
+     "score": 13,
+     "tags": [
+      "mirror symmetry",
+      "gromov-witten",
+      "genus one"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "The main goal of this paper is to study the extension of genus-one BCOV type mirror symmetry for smooth projective varieties with vanishing $c_1(X)$. We show that the naive generalization of the expectation that one can encode genus one Gromov-Witten invariants in the BCOV invariant of the mirror family cannot hold in this setup. We show this by completing the study of these invariants for surfaces."
+    },
+    {
+     "id": "2611.33491",
+     "kind": "new",
+     "title": "Primitive Collections for Klyachko Varieties",
+     "authors": "Nicole Lemire, Jason Palombaro",
+     "categories": [
+      "math.AG"
+     ],
+     "score": 4,
+     "tags": [
+      "del pezzo",
+      "toric",
+      "fano"
+     ],
+     "people": [],
+     "notes": [],
+     "snippet": "Klyachko introduced a family of $S_m\\times S_n$-invariant toric Gorenstein Fano varieties, $X_{mn}$, with connections to representation theory, algebraic groups, and graph theory. He focused on the case in which $m$ and $n$ are coprime, for which $X_{mn}$ are smooth, and hence Fano."
+    }
+   ]
+  },
+  {
    "date": "2026-11-25",
    "total": 173,
    "papers": [
